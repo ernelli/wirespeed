@@ -2,13 +2,48 @@ function isInteger(arg) {
     return (typeof arg === "number" && arg === Math.floor(arg));
 }
 
+function size(m) {
+    return dim;
+}
+
 function mul(a, b) {
-    var res;
+    var res, i, j, r, c, s, n, N;
     // A r,c x r,c
     if(a.dim[1] !== b.dim[0]) {
 	throw new("operator *: nonconformant arguments " + a.dim[0] + "x" + a.dim[1] + ", " + b.dim[0] + "x" + b.dim[1]);
     }
-    res = new Matrix(a.dim[0], b.dim[1]);
+    
+    N = a.dim[1];
+
+    r = a.dim[0];
+    c = b.dim[1];
+
+    print("result size: " + r + ", " + c);
+
+    res = new Matrix(r, c);
+
+    // 3x1 * 1x3
+
+    // 1x3 * 3x1
+
+    if(!a.im.length && !a.im.length) {
+	for(i = 0; i < r; i++) {
+	    res.re[i] = [];
+	    for(j = 0; j < c; j++) {
+		s = 0;
+
+		for(n = 0; n < N; n++) {
+		    if(a.re[i][n] && b.re[n][j]) {
+			s += a.re[i][n] * b.re[n][j];
+		    }
+		}
+		res.re[i].push(s);
+	    }
+	}
+
+    } else {
+	throw new("mul failed, complex matrixes not supported");
+    }
 
     return res;
 }
@@ -138,6 +173,9 @@ print(A);
 
 B = new Vector(3);
 B.re = [[1, 2, 3]];
+
+C = new Matrix(3,1);
+C.re = [ [1], [2], [3] ];
 
 var M = function(m) {
     return function(r,c) {
