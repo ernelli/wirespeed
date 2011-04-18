@@ -3,10 +3,11 @@ function isInteger(arg) {
 }
 
 function size(m) {
-    return dim;
+    return m.dim;
 }
 
-function mul(a, b) {
+// Multiplies a with b, returns result in new matrix
+function m_mul(a, b) {
     var res, i, j, r, c, s, n, N;
     // A r,c x r,c
     if(a.dim[1] !== b.dim[0]) {
@@ -46,6 +47,69 @@ function mul(a, b) {
     }
 
     return res;
+}
+
+// add b to a, return a
+function m_add(a,b) {
+    var i, j, J, n, s, t;
+
+    if(a.dim.length === b.dim.length) {
+
+	i = [];
+	
+	for(n = 0; n < a.dim.length; n++) {
+	    if( a.dim[n] !== b.dim[n] ) {
+		break;
+	    }
+	    i[n] = 1;
+	}
+	// dimensions agree
+
+	var num = 0;
+
+	if(n === a.dim.length) {
+	    i.pop(); // remove last index
+	    J = a.dim[a.dim.length-1];
+	    
+	    do {
+		
+		s = a.get.apply(a,i);
+		t = b.get.apply(b,i);
+
+		print("iteration ", num++);
+		print("index ", i);
+		print("add: " + t + " to " + s);
+
+		if(num > 10) {
+		    return a;
+		}
+		
+		for(j = 0; j < J; j++) {
+		    if(t[j]) {
+			if(s[j]) {
+			    s[j] += t[j];
+			} else {
+			    s[j] = t[j];
+			}
+		    }
+		}
+
+		n = i.length-1;
+		while(n >= 0) {
+		    if(i[n] < a.dim[n]) {
+			i[n]++;
+			break;
+		    } else {
+			i[n] = 1;
+			n--;
+		    }
+		}
+	    } while(n >= 0);
+	    return a;
+	}
+    }
+
+    throw new("operator +: nonconformant arguments " + a.dim[0] + "x" + a.dim[1] + ", " + b.dim[0] + "x" + b.dim[1]);
 }
 
 function Matrix() {
@@ -141,8 +205,8 @@ function Matrix() {
 		re = this.re;
 		im = this.im;
 		for(i = 0; i < arguments.length; i++) {
-		    re = re ? re[arguments[i]] : 0;
-		    im = im ? im[arguments[i]] : 0;
+		    re = re ? re[arguments[i]-1] : 0;
+		    im = im ? im[arguments[i]-1] : 0;
 		}
 	    }
 	    
@@ -168,7 +232,7 @@ function Vector() {
 var A = new Matrix(3);
 print(A);
 A.re = [ [1,2,3],[4,5,6], [7,8,9]];
-A.im = [ [], [1, 0, -1] ];
+//C.im = [ [], [1, 0, -1] ];
 print(A);
 
 B = new Vector(3);
