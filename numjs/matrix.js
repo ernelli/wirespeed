@@ -2,8 +2,106 @@ function isInteger(arg) {
     return (typeof arg === "number" && arg === Math.floor(arg));
 }
 
+function toNumber(arg) {
+    if(typeof arg === "undefined") {
+	print("undefined toNumber: " + (arg ? arg : 0));
+    }
+
+    if(arg) {
+	return arg;
+    } else {
+	return 0;
+    }
+}
+
+
 function size(m) {
     return m.dim;
+}
+
+function formatScalar(s) {
+    var res;
+
+    if(typeof s === "number") {
+	return "" + s;
+    } else if(typeof s === "undefined") {
+	return "?";
+    } else {
+	if(s.length === 2) {
+	    if(s[0] >= 0) {
+		res = " " + s[0];
+	    } else {
+		res = "" + s[0];
+	    }
+	    
+	    if(s[1] > 0) {
+		res += " + " + s[1] + "i";
+	    } else if(s[1] < 0) {
+		res += " - " + (-s[1]) + "i";
+	    }
+	    return res;
+	}
+	throw new("Error formatScalar, " + s + ", is not a scalar");
+    }
+}
+
+function s_add(a,b) {
+    if(typeof a === "number") {
+	if(typeof b === "number") {
+	    return a+b;
+	} else {
+	    return [ a+b[0], b[1] ];
+	}
+    } else {
+	if(typeof b === "number") {
+	    return [ b+a[0], a[1] ];
+	} else {
+	    print("s_add: " + formatScalar(a) + " + " + formatScalar(b) );
+	    return [ a[0]+b[0], a[1]+b[1] ];
+	}
+    }
+}
+
+// multiply two scalars, real or complex
+function s_mul(a, b) {
+    print("s_mul: " + a + " with " + b);
+    print("s_mul: " + formatScalar(a) + " * " + formatScalar(b) );
+    if(typeof a === "number") {
+	if(typeof b === "number") {
+	    return a*b;
+	} else {
+	    return [ a*b[0], a*b[1] ];
+	}
+    } else {
+	if(typeof b === "number") {
+	    return [ b*a[0], b*a[1] ];
+	} else {
+	    return [ a[0]*b[0] - a[1]*b[1], a[1]*b[0] + a[0]*b[1] ];
+	}
+    }
+}
+
+// divide two scalars, real or complex
+function s_div(a,b) {
+    var c;
+    if(typeof a === "number") {
+	if(typeof b === "number") {
+	    return a/b;
+	} else {
+	    //  a * 1/z = a * conj(z)/(z*conj(z)
+	    c = a/(b[0]*b[0] + b[1]*b[1]);
+	    return [ c*b[0], -c*b[1] ];
+	}
+    } else {
+	if(typeof b === "number") {
+	    // easy case z / b
+	    return [ a[0]/b, a[1]/b ];
+	} else {
+	    // z/z = ( a * conj(b) ) / (b * conj(b))
+	    c = b[0]*b[0] + b[1]*b[1];
+	    return [ (a[0]*b[0] + a[1]*b[1])/c, (a[1]*b[0] - a[0]*b[1])/c ];
+	}
+    }    
 }
 
 // Multiplies a with b, returns result in new matrix
@@ -27,12 +125,11 @@ function m_mul(a, b) {
 
     // 1x3 * 3x1
 
-    if(!a.im.length && !a.im.length) {
+    if(!a.im.length && !b.im.length) {
 	for(i = 0; i < r; i++) {
 	    res.re[i] = [];
 	    for(j = 0; j < c; j++) {
 		s = 0;
-
 		for(n = 0; n < N; n++) {
 		    if(a.re[i][n] && b.re[n][j]) {
 			s += a.re[i][n] * b.re[n][j];
@@ -41,9 +138,27 @@ function m_mul(a, b) {
 		res.re[i].push(s);
 	    }
 	}
-
     } else {
-	throw new("mul failed, complex matrixes not supported");
+	for(i = 0; i < r; i++) {
+	    res.re[i] = [];
+	    res.im[i] = [];
+
+	    for(j = 0; j < c; j++) {
+		s = [0,0];
+		for(n = 0; n < N; n++) {
+		    if(a.re[i][n] && b.re[n][j] && a.im[i][n] && b.im[n][j]) {
+			print("hard mul/add");
+			s = s_add(s,s_mul( [a.re[i][n], a.im[i][n]], [ b.re[n][j], b.im[n][j] ]));
+		    } else {
+			print("safe mul/add");
+			s = s_add(s,s_mul( [toNumber(a.re[i][n]), toNumber(b.re[n][j]) ], [toNumber(a.im[i][n]), toNumber(b.im[n][j]) ]));
+		    }
+		}
+		res.re[i].push(s[0]);
+		res.im[i].push(s[1]);
+	    }
+	}
+
     }
 
     return res;
@@ -192,15 +307,19 @@ function Matrix() {
     }
     
     this.get = function() {
-	var i, e, re, im;
+	var i, e, re, im, res;
             
 	if(arguments.length <= this.dim.length) {
 	    print("get from: " + arguments[0] + "," + arguments[1]);
 	    
-	    if(arguments.length == 2) {
+	    if(arguments.length === 2) {
 		print("get from: " + this.re);
-		re = this.re[arguments[0]-1][arguments[1]-1];
-		im = this.im[arguments[0]-1][arguments[1]-1];
+		if( re = this.re[arguments[0]-1]) {
+		    re = re[arguments[1]-1];
+		}
+		if( im = this.im[arguments[0]-1] ) {
+		    im = im[arguments[1]-1];
+		}
 	    } else {
 		re = this.re;
 		im = this.im;
@@ -216,6 +335,7 @@ function Matrix() {
 		return re;
 	    }
 	}
+	throw new("error: * : Index exceeds matrix dimension.");
     };
 }
 
@@ -229,27 +349,3 @@ function Vector() {
 }
 
 
-var A = new Matrix(3);
-print(A);
-A.re = [ [1,2,3],[4,5,6], [7,8,9]];
-//C.im = [ [], [1, 0, -1] ];
-print(A);
-
-B = new Vector(3);
-B.re = [[1, 2, 3]];
-
-C = new Matrix(3,1);
-C.re = [ [1], [2], [3] ];
-
-var M = function(m) {
-    return function(r,c) {
-	if(arguments.length == 0) {
-	    return m;
-	}
-
-	print("process\n" + m);
-	return m.get(r,c);
-    };
-}(A);
-
-M.toString = function() { return M().toString.apply(M()); };
