@@ -46,39 +46,67 @@ function formatScalar(s) {
 }
 
 function s_add(a,b) {
+    /*
+    var res;
+    if(typeof a === "number" && typeof b === "number") {
+	return a+b;
+    } else {
+	res = [ a[0]?a[0]:0+b[0]?b[0]:0, a[1]?a[1]:0+b[1]?b[1]:0 ];
+	if(res[1]) {
+	    return res;
+	} else {
+	    return res[0];
+	}
+    }
+    */
     if(typeof a === "number") {
 	if(typeof b === "number") {
 	    return a+b;
 	} else {
-	    return [ a+b[0], b[1] ];
+	    return [ a+(b[0]?b[0]:0), b[1]?b[1]:0 ];
 	}
     } else {
 	if(typeof b === "number") {
-	    return [ b+a[0], a[1] ];
+	    return [ b+(a[0]?a[0]:0), a[1]?a[1]:0];
 	} else {
 	    print("s_add: " + formatScalar(a) + " + " + formatScalar(b) );
-	    return [ a[0]+b[0], a[1]+b[1] ];
+	    return [ (a[0]?a[0]:0)+(b[0]?b[0]:0), (a[1]?a[1]:0)+(b[1]?b[1]:0) ];
 	}
     }
+
 }
 
 // multiply two scalars, real or complex
 function s_mul(a, b) {
+    var a0, a1, b0, b1;
     print("s_mul: " + a + " with " + b);
     print("s_mul: " + formatScalar(a) + " * " + formatScalar(b) );
     if(typeof a === "number") {
 	if(typeof b === "number") {
 	    return a*b;
 	} else {
-	    return [ a*b[0], a*b[1] ];
+	    return [ a*(b[0]?b[0]:0), a*(b[1]?b[1]:0) ];
 	}
     } else {
 	if(typeof b === "number") {
-	    return [ b*a[0], b*a[1] ];
+	    return [ b*(a[0]?a[0]:0), b*(a[1]?a[1]:0) ];
 	} else {
-	    return [ a[0]*b[0] - a[1]*b[1], a[1]*b[0] + a[0]*b[1] ];
+	    a0 = a[0]?a[0]:0;
+	    a1 = a[1]?a[1]:0;
+	    b0 = b[0]?b[0]:0;
+	    b1 = b[1]?b[1]:0;
+	    return [ a0*b0 - a1*b1, a1*b0 + a0*b1 ];
 	}
     }
+}
+
+var old_mul = s_mul;
+s_mul = function(a,b) {
+    var res = old_mul(a,b);
+    
+    print("result " + formatScalar(res));
+
+    return res;
 }
 
 // divide two scalars, real or complex
@@ -125,14 +153,17 @@ function m_mul(a, b) {
 
     // 1x3 * 3x1
 
+    // matrix is real
     if(!a.im.length && !b.im.length) {
 	for(i = 0; i < r; i++) {
 	    res.re[i] = [];
 	    for(j = 0; j < c; j++) {
 		s = 0;
-		for(n = 0; n < N; n++) {
-		    if(a.re[i][n] && b.re[n][j]) {
-			s += a.re[i][n] * b.re[n][j];
+		if (a.re[i]) {
+		    for(n = 0; n < N; n++) {
+			if(a.re[i][n] && b.re[n] && b.re[n][j]) {
+			    s += a.re[i][n] * b.re[n][j];
+			}
 		    }
 		}
 		res.re[i].push(s);
@@ -145,14 +176,19 @@ function m_mul(a, b) {
 
 	    for(j = 0; j < c; j++) {
 		s = [0,0];
-		for(n = 0; n < N; n++) {
-		    if(a.re[i][n] && b.re[n][j] && a.im[i][n] && b.im[n][j]) {
+		
+		if(a.re[i] && a.im[i]) {
+		    for(n = 0; n < N; n++) {
 			print("hard mul/add");
-			s = s_add(s,s_mul( [a.re[i][n], a.im[i][n]], [ b.re[n][j], b.im[n][j] ]));
-		    } else {
+			s = s_add(s,s_mul( [a.re[i][n], a.im[i][n]], [ b.re[n] && b.re[n][j], b.im[n] && b.im[n][j] ]));
+		    } 
+		} else {
+		    for(n = 0; n < N; n++) {
 			print("safe mul/add");
-			s = s_add(s,s_mul( [toNumber(a.re[i][n]), toNumber(b.re[n][j]) ], [toNumber(a.im[i][n]), toNumber(b.im[n][j]) ]));
+			s = s_add(s,s_mul( [a.re[i] && a.re[i][n], a.im[i] && a.im[i][n] ], 
+					   [b.re[n] && b.re[n][j], b.im[n] && b.im[n][j] ]));
 		    }
+
 		}
 		res.re[i].push(s[0]);
 		res.im[i].push(s[1]);
