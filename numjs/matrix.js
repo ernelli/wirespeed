@@ -1,3 +1,4 @@
+
 function isInteger(arg) {
     return (typeof arg === "number" && arg === Math.floor(arg));
 }
@@ -14,9 +15,21 @@ function toNumber(arg) {
     }
 }
 
+function whos() {
+  var i;
+  for(i in this) { 
+    if(this[i] instanceof Matrix) {
+        print( "" + i + "\t" + size(this[i]) ); 
+    }
+  }
+}
 
 function size(m) {
-    return m.dim;
+    var s = m.dim.slice(0);
+    s.toString = function() {
+      return "" + s.join("x");
+    }
+    return s;
 }
 
 function formatScalar(s) {
@@ -45,20 +58,10 @@ function formatScalar(s) {
     }
 }
 
-function s_add(a,b) {
-    /*
-    var res;
-    if(typeof a === "number" && typeof b === "number") {
-	return a+b;
-    } else {
-	res = [ a[0]?a[0]:0+b[0]?b[0]:0, a[1]?a[1]:0+b[1]?b[1]:0 ];
-	if(res[1]) {
-	    return res;
-	} else {
-	    return res[0];
-	}
-    }
-    */
+
+// Add two scalars return new scalar
+function add_s(a,b) {
+
     if(typeof a === "number") {
 	if(typeof b === "number") {
 	    return a+b;
@@ -69,7 +72,7 @@ function s_add(a,b) {
 	if(typeof b === "number") {
 	    return [ b+(a[0]?a[0]:0), a[1]?a[1]:0];
 	} else {
-	    print("s_add: " + formatScalar(a) + " + " + formatScalar(b) );
+//	    print("add_s: " + formatScalar(a) + " + " + formatScalar(b) );
 	    return [ (a[0]?a[0]:0)+(b[0]?b[0]:0), (a[1]?a[1]:0)+(b[1]?b[1]:0) ];
 	}
     }
@@ -77,10 +80,10 @@ function s_add(a,b) {
 }
 
 // multiply two scalars, real or complex
-function s_mul(a, b) {
+function mul_s(a, b) {
     var a0, a1, b0, b1;
-    print("s_mul: " + a + " with " + b);
-    print("s_mul: " + formatScalar(a) + " * " + formatScalar(b) );
+    print("mul_s: " + a + " with " + b);
+    print("mul_s: " + formatScalar(a) + " * " + formatScalar(b) );
     if(typeof a === "number") {
 	if(typeof b === "number") {
 	    return a*b;
@@ -100,8 +103,9 @@ function s_mul(a, b) {
     }
 }
 
-var old_mul = s_mul;
-s_mul = function(a,b) {
+//augment mul_s is with debug output
+var old_mul = mul_s;
+mul_s = function(a,b) {
     var res = old_mul(a,b);
     
     print("result " + formatScalar(res));
@@ -110,7 +114,7 @@ s_mul = function(a,b) {
 }
 
 // divide two scalars, real or complex
-function s_div(a,b) {
+function div_s(a,b) {
     var c;
     if(typeof a === "number") {
 	if(typeof b === "number") {
@@ -132,8 +136,8 @@ function s_div(a,b) {
     }    
 }
 
-// Multiplies a with b, returns result in new matrix
-function m_mul(a, b) {
+// Multiplies matrix a with matrix b, returns result in new matrix
+function mul_m(a, b) {
     var res, i, j, r, c, s, n, N;
     // A r,c x r,c
     if(a.dim[1] !== b.dim[0]) {
@@ -149,9 +153,9 @@ function m_mul(a, b) {
 
     res = new Matrix(r, c);
 
-    // 3x1 * 1x3
+    // 3x1 * 1x3 = 3x3
 
-    // 1x3 * 3x1
+    // 1x3 * 3x1 = 1x1
 
     // matrix is real
     if(!a.im.length && !b.im.length) {
@@ -169,6 +173,7 @@ function m_mul(a, b) {
 		res.re[i].push(s);
 	    }
 	}
+	// complex matrix
     } else {
 	for(i = 0; i < r; i++) {
 	    res.re[i] = [];
@@ -180,12 +185,12 @@ function m_mul(a, b) {
 		if(a.re[i] && a.im[i]) {
 		    for(n = 0; n < N; n++) {
 			print("hard mul/add");
-			s = s_add(s,s_mul( [a.re[i][n], a.im[i][n]], [ b.re[n] && b.re[n][j], b.im[n] && b.im[n][j] ]));
+			s = add_s(s,mul_s( [a.re[i][n], a.im[i][n]], [ b.re[n] && b.re[n][j], b.im[n] && b.im[n][j] ]));
 		    } 
 		} else {
 		    for(n = 0; n < N; n++) {
 			print("safe mul/add");
-			s = s_add(s,s_mul( [a.re[i] && a.re[i][n], a.im[i] && a.im[i][n] ], 
+			s = add_s(s,mul_s( [a.re[i] && a.re[i][n], a.im[i] && a.im[i][n] ], 
 					   [b.re[n] && b.re[n][j], b.im[n] && b.im[n][j] ]));
 		    }
 
@@ -201,7 +206,7 @@ function m_mul(a, b) {
 }
 
 // add b to a, return a
-function m_add(a,b) {
+function add_m(a,b) {
     var i, j, J, n, s, t;
 
     if(a.dim.length === b.dim.length) {
@@ -268,7 +273,7 @@ function Matrix() {
 
     this.re = [];
     this.im = [];
-    this.dim = []
+    this.dim = [];
 
     if(arguments.length > 0) {
 	// create a NxN matrix with zeros
@@ -289,44 +294,21 @@ function Matrix() {
 
 	print("r,c = " + r + ", " + c);
 
-	if(this.re.length > 0) {
-	    if(this.im.length === 0) {
-		e = this.re;
-		for(i = 0; i < r; i++) {
-		    for(j = 0; j < c; j++) {
-			if(e[i] && (d = e[i][j])) {
-			    s+= d + "\t";
-			} else {
-			    s+= "0\t";
-			}
+	if(this.im.length === 0) {
+	    // only real elements
+	    e = this.re;
+	    for(i = 0; i < r; i++) {
+		for(j = 0; j < c; j++) {
+		    if(e[i] && (d = e[i][j])) {
+			s+= d + "\t";
+		    } else {
+			s+= "0\t";
 		    }
-		    s+= "\n";
 		}
-	    } else {
-		re = this.re;
-		im = this.im;
-		for(i = 0; i < r; i++) {
-		    for(j = 0; j < c; j++) {
-			if(re[i] && (d=re[i][j])) {
-			    s+= d;
-			} else {
-			    s+= "0";
-			}
-			
-			if(im[i] && (d=im[i][j])) {
-			    if(d < 0) {
-				s+= " - " + (-d) + "i\t";
-			    } else {
-				s+= " + " + d + "i\t";
-			    }
-			} else {
-			    s+= " + 0i\t";
-			}
-		    }
-		    s+= "\n";
-		}
+		s+= "\n";
 	    }
-	} else if(this.im.length > 0) {
+	} else if (this.re.length === 0){
+	    // only imaginary elements
 	    e = this.im;
 	    for(i = 0; i < r; i++) {
 		for(j = 0; j < c; j++) {
@@ -337,11 +319,38 @@ function Matrix() {
 		    }
 		}
 		s+= "\n";
+	    }	    
+	} else {
+	    // mixed real/image elements
+	    re = this.re;
+	    im = this.im;
+	    for(i = 0; i < r; i++) {
+		for(j = 0; j < c; j++) {
+		    if(re[i] && (d=re[i][j])) {
+			s+= d;
+		    } else {
+			s+= "0";
+		    }
+		    
+		    if(im[i] && (d=im[i][j])) {
+			if(d < 0) {
+			    s+= " - " + (-d) + "i\t";
+			} else {
+			    s+= " + " + d + "i\t";
+			}
+		    } else {
+			s+= " + 0i\t";
+		    }
+		}
+		s+= "\n";
 	    }
-	};
+	}
+
 	return s;
-    }
-    
+    };
+
+    // returns scalar element in matrix if num args == dim.length, else
+    // returns a vector/matrix from matrix
     this.get = function() {
 	var i, e, re, im, res;
             
@@ -350,10 +359,10 @@ function Matrix() {
 	    
 	    if(arguments.length === 2) {
 		print("get from: " + this.re);
-		if( re = this.re[arguments[0]-1]) {
+		if( (re = this.re[arguments[0]-1]) ) {
 		    re = re[arguments[1]-1];
 		}
-		if( im = this.im[arguments[0]-1] ) {
+		if( (im = this.im[arguments[0]-1]) ) {
 		    im = im[arguments[1]-1];
 		}
 	    } else {
@@ -375,7 +384,7 @@ function Matrix() {
     };
 }
 
-
+// creates a 1xN sized matrix, a vector.
 function Vector() {
     var n;
     
@@ -385,3 +394,37 @@ function Vector() {
 }
 
 
+function rand() {
+    var n, i, I, a = {}, e;
+    Matrix.apply(a, arguments);
+
+    n = [];
+    for(i = 0; i < dim.length-1; i++) {
+	n[i] = 0;
+    }
+
+    // inner loop length
+    I = a.dim[a.dim.length-1];
+
+    while(n.length < a.dim.length) {
+	e = a.get.apply(a,n);
+	for(i = 0; i < I; i++) {
+	    e[i] = Math.random();
+	}
+	i = 0;
+	n[i]++;
+
+	while(n[i] >= a.dim[i]) {
+	    n[i] = 0;
+	    i++;
+	    if(n[i]) {
+		n[i]++;		
+	    } else {
+		n[i] = 0;
+	    }
+	}
+    }
+    
+
+    return a;
+}

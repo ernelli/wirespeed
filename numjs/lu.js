@@ -15,7 +15,7 @@ matrix = [[1, 5, 3, 1, 0 ,0],[ -1, -3, -4, 0, 1, 0],[ 7, 8, 9, 0, 0, 1]];
     };
 //}
 
-function LRUfact(mat)
+function gauss_real(mat)
 {
     var M = mat.length;
     var N = mat[0].length;
@@ -42,12 +42,12 @@ function LRUfact(mat)
     }
 }
 
-function inverse(mat)
+function gaussjordan(mat)
 {
     var M = mat.length;
     var N = mat[0].length;
 
-    LRUfact(mat);
+    gauss(mat);
 
     for(n = M-1; n >= 0; n--) {
 	for(m = n-1; m >= 0; m--) {
