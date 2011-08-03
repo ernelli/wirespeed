@@ -296,7 +296,7 @@ function Matrix() {
     }
 
     this.toString = function() {
-	var i, j, s, d, r, c, e, re, im;
+	var i, j, s, d, r, c, e, re, im, sp = "          ";
 	
 	s = "";
 	
@@ -311,10 +311,17 @@ function Matrix() {
 	    for(i = 0; i < r; i++) {
 		for(j = 0; j < c; j++) {
 		    if(e[i] && (d = e[i][j])) {
-			s+= d.toPrecision(5) + "\t";
+			if(d < 1 && d > -1) {
+			    d = d.toFixed(5);
+			} else {
+			    d = d.toPrecision(6);
+			}
+
 		    } else {
-			s+= "0\t";
+			d = "0";
 		    }
+
+		    s += sp.substring(d.length) + d;
 		}
 		s+= "\n";
 	    }
@@ -324,10 +331,16 @@ function Matrix() {
 	    for(i = 0; i < r; i++) {
 		for(j = 0; j < c; j++) {
 		    if(e[i] && (d = e[i][j])) {
-			s+= d + "i\t";
+			if(d < 1 && d > -1) {
+			    d = d.toFixed(5);
+			} else {
+			    d = d.toPrecision(6);
+			}
+
 		    } else {
-			s+= "0\t";
+			d = "0";
 		    }
+		    s += sp.substring(d.length) + d + "i";
 		}
 		s+= "\n";
 	    }	    
