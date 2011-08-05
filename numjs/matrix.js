@@ -42,9 +42,9 @@ function formatScalar(s) {
     } else {
 	if(s.length === 2) {
 	    if(s[0] >= 0) {
-		res = " " + s[0].toPrecision(5);
+		res = " " + s[0];
 	    } else {
-		res = "" + s[0].toPrecision(5);
+		res = "" + s[0];
 	    }
 	    
 	    if(s[1] > 0) {
@@ -56,6 +56,24 @@ function formatScalar(s) {
 	}
 	throw new("Error formatScalar, " + s + ", is not a scalar");
     }
+}
+
+// test
+
+function equal_s(a,b) {
+    if(typeof a === "number") {
+	if(typeof b === "number") {
+	    return a===b;
+	} else {
+	    return (a === b[0] && b[1] === 0);
+	}
+    } else {
+	if(typeof b === "number") {
+	    return (a[0] === b && a[1] === 0);
+	} else {
+	    return a[0] === b[0] && a[1] === b[1];
+	}
+    }    
 }
 
 
@@ -102,7 +120,7 @@ function mul_s(a, b) {
 	}
     }
 }
-
+/*
 //augment mul_s is with debug output
 var old_mul = mul_s;
 mul_s = function(a,b) {
@@ -112,6 +130,7 @@ mul_s = function(a,b) {
 
     return res;
 }
+*/
 
 // divide two scalars, real or complex
 function div_s(a,b) {
@@ -135,6 +154,34 @@ function div_s(a,b) {
 	}
     }    
 }
+
+// vector-vector, vector-vector ops
+
+// v = [ re[], im[] ]
+// s = [ re, im ]
+
+function mul_v_s(v, s) {
+    var n, N, re, im, s0, s1, v0, v1;
+
+    s0 = s[0] ? s[0] : 0;
+    s1 = s[1] ? s[1] : 0;
+
+    if (v[0] && v[0].length > 0  && v[1] && v[1].length > 0) { // both real and imaginary parts of vector
+	re = v[0];
+	im = v[1];
+	N = Math.max(v[0].length, v[1].length);
+	for(n = 0; n < N; n++) {
+	    v0 = re[n] ? re[n] : 0;
+	    v1 = im[n] ? im[n] : 0;
+
+	    re[n] =  v0*s0 - v1*s1;
+	    im[n] =  v1*s0 + v0*s1;
+	}
+    }
+}
+
+
+// matrix-matrix ops
 
 // Multiplies matrix a with matrix b, returns result in new matrix
 function mul_m(a, b) {
@@ -296,7 +343,7 @@ function Matrix() {
     }
 
     this.toString = function() {
-	var i, j, s, d, r, c, e, re, im;
+	var i, j, s, d, r, c, e, re, im, sp = "          ";
 	
 	s = "";
 	
@@ -311,10 +358,17 @@ function Matrix() {
 	    for(i = 0; i < r; i++) {
 		for(j = 0; j < c; j++) {
 		    if(e[i] && (d = e[i][j])) {
-			s+= d.toPrecision(5) + "\t";
+			if(d < 1 && d > -1) {
+			    d = d.toFixed(5);
+			} else {
+			    d = d.toPrecision(6);
+			}
+
 		    } else {
-			s+= "0\t";
+			d = "0";
 		    }
+
+		    s += sp.substring(d.length) + d;
 		}
 		s+= "\n";
 	    }
@@ -324,10 +378,16 @@ function Matrix() {
 	    for(i = 0; i < r; i++) {
 		for(j = 0; j < c; j++) {
 		    if(e[i] && (d = e[i][j])) {
-			s+= d + "i\t";
+			if(d < 1 && d > -1) {
+			    d = d.toFixed(5);
+			} else {
+			    d = d.toPrecision(6);
+			}
+
 		    } else {
-			s+= "0\t";
+			d = "0";
 		    }
+		    s += sp.substring(d.length) + d + "i";
 		}
 		s+= "\n";
 	    }	    
