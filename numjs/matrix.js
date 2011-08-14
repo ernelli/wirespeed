@@ -1,3 +1,14 @@
+var enableDebug;
+
+if(enableDebug) {
+    function debug(str) {
+	print(str);
+    }
+
+} else {
+    function debug() {
+    }
+}
 
 function isInteger(arg) {
     return (typeof arg === "number" && arg === Math.floor(arg));
@@ -23,6 +34,8 @@ function whos() {
     }
   }
 }
+
+// scalar functions
 
 function size(m) {
     var s = m.dim.slice(0);
@@ -90,7 +103,7 @@ function add_s(a,b) {
 	if(typeof b === "number") {
 	    return [ b+(a[0]?a[0]:0), a[1]?a[1]:0];
 	} else {
-//	    print("add_s: " + formatScalar(a) + " + " + formatScalar(b) );
+//	    debug("add_s: " + formatScalar(a) + " + " + formatScalar(b) );
 	    return [ (a[0]?a[0]:0)+(b[0]?b[0]:0), (a[1]?a[1]:0)+(b[1]?b[1]:0) ];
 	}
     }
@@ -100,8 +113,8 @@ function add_s(a,b) {
 // multiply two scalars, real or complex
 function mul_s(a, b) {
     var a0, a1, b0, b1;
-    print("mul_s: " + a + " with " + b);
-    print("mul_s: " + formatScalar(a) + " * " + formatScalar(b) );
+    debug("mul_s: " + a + " with " + b);
+    debug("mul_s: " + formatScalar(a) + " * " + formatScalar(b) );
     if(typeof a === "number") {
 	if(typeof b === "number") {
 	    return a*b;
@@ -120,17 +133,6 @@ function mul_s(a, b) {
 	}
     }
 }
-/*
-//augment mul_s is with debug output
-var old_mul = mul_s;
-mul_s = function(a,b) {
-    var res = old_mul(a,b);
-    
-    print("result " + formatScalar(res));
-
-    return res;
-}
-*/
 
 // divide two scalars, real or complex
 function div_s(a,b) {
@@ -155,21 +157,34 @@ function div_s(a,b) {
     }    
 }
 
-// vector-vector, vector-vector ops
+// vector-scalar functinos
 
 // v = [ re[], im[] ]
-// s = [ re, im ]
+// s = number | [ re, im ]
 
+// multiply vector with scalar
 function mul_v_s(v, s) {
     var n, N, re, im, s0, s1, v0, v1;
 
-    s0 = s[0] ? s[0] : 0;
-    s1 = s[1] ? s[1] : 0;
+    if(typeof s === "number") {
+	s0 = s;
+	s1 = 0;
+    } else {
+	s0 = s[0] ? s[0] : 0;
+	s1 = s[1] ? s[1] : 0;
+    }
 
-    if (v[0] && v[0].length > 0  && v[1] && v[1].length > 0) { // both real and imaginary parts of vector
-	re = v[0];
+    if (v[1] && v[1].length > 0) { // vector has both real and imaginary parts
+	if(v[0]) {
+	    re = v[0];
+	} else {
+	    re = [];
+	    v[0] = re;
+	}
+
 	im = v[1];
-	N = Math.max(v[0].length, v[1].length);
+
+	N = Math.max(re.length, im.length);
 	for(n = 0; n < N; n++) {
 	    v0 = re[n] ? re[n] : 0;
 	    v1 = im[n] ? im[n] : 0;
@@ -177,9 +192,81 @@ function mul_v_s(v, s) {
 	    re[n] =  v0*s0 - v1*s1;
 	    im[n] =  v1*s0 + v0*s1;
 	}
+    } else {
+	// vector has only real entries
+	if(v[0]) {
+	    N = v[0].length;
+	    re = v[0];
+
+	    // check if complex scalar
+	    if(s1) {
+		for(n = 0; n < N; n++) {
+		    im[n] = re[n] *s1;
+		    re[n] *= s0;
+		}		
+	    } else {
+		for(n = 0; n < N; n++) {
+		    re[n] *= s0;
+		}
+	    }
+	}
     }
 }
+// vector-vector ops
 
+// returns true if both vectors are equal
+function equal_v(a,b) {
+  var v0, v1, n, N;
+    
+  // check real
+  if(a[0] || b[0]) {
+      v0 = a[0] ? a[0] : [];
+      v1 = b[0] ? b[0] : [];
+
+      N = Math.max(v0.length, v1.length);
+      for(n = 0; n < N; n++) {
+	  if(v0[n] && v1[n] && v0[n] !== v1[n]) {
+	      return false;
+	  }
+	  if(v0[n] && !v1[n] || !v0[n] && v1[n]) {
+	      return false;
+	  }
+      }
+  }  
+
+  if(a[1] || b[1]) {
+      v0 = a[1] ? a[1] : [];
+      v1 = b[1] ? b[1] : [];
+
+      N = Math.max(v0.length, v1.length);
+      for(n = 0; n < N; n++) {
+	  if(v0[n] && v1[n] && v0[n] !== v1[n]) {
+	      return false;
+	  }
+	  if(v0[n] && !v1[n] || !v0[n] && v1[n]) {
+	      return false;
+	  }
+      }
+  }  
+
+
+  return true;
+
+  /* forEach might not work for array comparision
+  if(a[0] || b[0]) {
+      v0 = a[0] ? a[0] : [];
+      v1 = b[0] ? b[0] : [];
+      v0.forEach(function(v,i) { 
+		     if( (v1[i] && v1[i] !== v) || (!v1[i] && v) ) { 
+			 throw 1;  
+		     } 
+		 });
+  }
+*/
+}
+
+
+// tests
 
 // matrix-matrix ops
 
@@ -196,7 +283,7 @@ function mul_m(a, b) {
     r = a.dim[0];
     c = b.dim[1];
 
-    print("result size: " + r + ", " + c);
+    debug("result size: " + r + ", " + c);
 
     res = new Matrix(r, c);
 
@@ -231,12 +318,12 @@ function mul_m(a, b) {
 		
 		if(a.re[i] && a.im[i]) {
 		    for(n = 0; n < N; n++) {
-			print("hard mul/add");
+			debug("hard mul/add");
 			s = add_s(s,mul_s( [a.re[i][n], a.im[i][n]], [ b.re[n] && b.re[n][j], b.im[n] && b.im[n][j] ]));
 		    } 
 		} else {
 		    for(n = 0; n < N; n++) {
-			print("safe mul/add");
+			debug("safe mul/add");
 			s = add_s(s,mul_s( [a.re[i] && a.re[i][n], a.im[i] && a.im[i][n] ], 
 					   [b.re[n] && b.re[n][j], b.im[n] && b.im[n][j] ]));
 		    }
@@ -288,9 +375,9 @@ function add_m(a,b) {
 		b_re = t[0];
 		b_im = t[1];
 
-		print("iteration ", num++);
-		print("index ", i);
-		print("add: " + t + " to " + s);
+		debug("iteration ", num++);
+		debug("index ", i);
+		debug("add: " + t + " to " + s);
 
 		if(num > 10) {
 		    return a;
@@ -350,7 +437,7 @@ function Matrix() {
 	r = 1*this.dim[0];
 	c = 1*this.dim[1];
 
-	print("r,c = " + r + ", " + c);
+	debug("r,c = " + r + ", " + c);
 
 	if(this.im.length === 0) {
 	    // only real elements
@@ -518,7 +605,7 @@ function Matrix() {
 	    m.setrow(i, r[0] ? r[0].slice(0) : false, r[1] ? r[1].slice(0) : false);
 	} while(m.nextelem(i));
 	return m;
-    }
+    };
 
     // returns scalar element in matrix if num args == dim.length, else
     // returns a sub matrix from matrix, index supports
@@ -527,11 +614,11 @@ function Matrix() {
 	var i, re, im;
             
 	if(arguments.length <= this.dim.length) {
-	    print("get from: " + arguments[0] + "," + arguments[1]);
+	    debug("get from: " + arguments[0] + "," + arguments[1]);
 	    
 	    // unnecesary premature optimisation
 	    if(arguments.length === 2) {
-		print("get from: " + this.re);
+		debug("get from: " + this.re);
 		if( (re = this.re[arguments[0]-1]) ) {
 		    re = re[arguments[1]-1];
 		}
@@ -567,7 +654,6 @@ function Matrix() {
 		if(!re[index[i]-1]) {
 		    
 		}
-
 
 		re = re ? re[index[i]-1] : 0;
 		im = im ? im[index[i]-1] : 0;
@@ -611,17 +697,17 @@ function rand() {
     var n, i, I, a = {}, e, re;
     Matrix.apply(a, arguments);
 
-    print("got a matrix: " + size(a));
+    debug("got a matrix: " + size(a));
  
     n = a.firstrow();
 
      // inner loop length
     I = a.dim[a.dim.length-1];
 
-    print("inner loop length: " + I);
+    debug("inner loop length: " + I);
 
     do {
-	print("getrow from a, index: " + n + ", a.dim: " + a.dim);
+	debug("getrow from a, index: " + n + ", a.dim: " + a.dim);
 	e = a.getrow(n);
 	
 	if(e[0]) {

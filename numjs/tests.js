@@ -3,11 +3,34 @@ load('gauss.js');
 
 function assert(x) {
     if(!x) {
+	//print("Assertion failed");
 	throw new Error("Assertion failed");
+	//throw new RhinoException("Assertion failed");
+	//throw new exception("Assertion failed");
     }
 }
 
 print("Testing scalar primitives");
+
+assert(equal_s([1,0],[1,0]));
+assert(equal_s([-1,0],[-1,0]));
+assert(equal_s([-1,2],[-1,2]));
+assert(!equal_s([-1,2],[1,2]));
+assert(!equal_s([1,-2],[1,2]));
+assert(!equal_s([-1,-2],[1,2]));
+
+// Checking that scalar equality works with plain numbers
+assert(equal_s(1,1));
+assert(equal_s(0,0));
+assert(equal_s(-1,-1));
+assert(!equal_s(-1, 1));
+
+assert(equal_s([1,0],1));
+assert(equal_s([-1,0],-1));
+assert(equal_s(1, [1,0]));
+assert(equal_s(-1, [-1,0]));
+assert(!equal_s([-1,0],1));
+assert(!equal_s(1, [-1,0]));
 
 var a = [2, 3];
 var b = [0, 1];
@@ -15,38 +38,49 @@ var c;
 
 c = mul_s(a, [1,0]);
 assert(equal_s(c,a));
-
-print(formatScalar(a));
 c = mul_s(a, b);
-print(formatScalar(a));
 assert(c[0] === -a[1]);
 c = mul_s(c, b);
-print(formatScalar(a));
 c = mul_s(c, b);
-print(formatScalar(a));
 c = mul_s(c, b);
-print(formatScalar(a));
+assert(equal_s(a,c));
 
-assert(c[0] === a[0] && c[1] === a[1]);
-
+// testing vector primitives
 print("Testing vector primitives");
+assert(equal_v([[1,2,3],[]],[[1,2,3],[]]));
+assert(!equal_v([[1,,3],[]],[[1,2,3],[]]));
+assert(equal_v([[1,,3],[]],[[1,0,3],[]]));
+assert(equal_v([[1,,3],[]],[[1,,3],[]]));
+assert(!equal_v([[1,,3],[]],[[1,,],[]]));
+assert(equal_v([[1,,3],[]],[[1,,3,0,0,0,0,0,0],[]]));
 
-v = [];
+assert(!equal_v([[],[1]],[[]]));
+assert(equal_v([[],[1]],[,[1]]));
+
+var v = [];
 v[0] = [1, 2, 3, 4, 5, 6, 7, 8];
 v[1] = [8, 7, 6, 5, 4, 3, 2, 1];
 
-print("v: " + v);
-mul_v_s(v, [1,0]);
-print("v: " + v);
-mul_v_s(v, [0,1]);
-print("v: " + v);
-mul_v_s(v, [0,1]);
-print("v: " + v);
-mul_v_s(v, [0,1]);
-print("v: " + v);
-mul_v_s(v, [0,1]);
-print("v: " + v);
+var r = [];
+r[0] = [1, 2, 3, 4, 5, 6, 7, 8];
+r[1] = [8, 7, 6, 5, 4, 3, 2, 1];
 
+
+// Multiply with 1
+mul_v_s(v, [1,0]);
+assert(equal_v(v,r));
+
+// multipy with i
+mul_v_s(v, [0,1]);
+assert(!equal_v(v,r));
+mul_v_s(v, [0,1]);
+assert(!equal_v(v,r));
+mul_v_s(v, [0,1]);
+assert(!equal_v(v,r));
+mul_v_s(v, [0,1]);
+assert(equal_v(v,r));
+
+print("Vector primitives passed");
 
 var A = new Matrix(3);
 print(A);
@@ -112,3 +146,4 @@ print(P);
 
 inv = inverse(G);
 print(inv);
+
