@@ -157,10 +157,64 @@ function div_s(a,b) {
     }    
 }
 
-// vector-scalar functinos
+// vector-scalar functions
 
 // v = [ re[], im[] ]
 // s = number | [ re, im ]
+
+// add scalar to vector, note N indicates size of vector if vector is sparse
+function add_v_s(v, s, N) {
+    var n, re, im, s0, s1;
+    
+    if(typeof s === "number") {
+	s0 = s;
+	s1 = 0;
+    } else {
+	s0 = s[0] ? s[0] : 0;
+	s1 = s[1] ? s[1] : 0;
+    }
+
+    // N not given, vector is not sparse
+    if (!N) {
+	N = v[0].length;
+    }
+
+    // Process real part of vector
+    if(s0) {
+	if(!v[0]) {
+	    re = [];
+	    v[0] = re;
+	    for(n = 0; n < N; n++) {
+		re[n] = s0;
+	    }
+	} else {
+	    re = v[0];
+	    for(n = 0; n < N; n++) {
+		re[n] = re[n] ? re[n] + s0 : s0;
+	    }
+	}
+    }
+
+    // Process imaginary vector
+    if(s1) {
+	if(!v[1]) {
+	    im = [];
+	    v[1] = im;
+	    for(n = 0; n < N; n++) {
+		im[n] = s1;
+	    }
+	} else {
+	    im = v[1];
+	    for(n = 0; n < N; n++) {
+		im[n] = im[n] ? im[n] + s1 : s1;
+	    }
+	}
+    }
+
+
+
+    return v;
+}
 
 // multiply vector with scalar
 function mul_v_s(v, s) {
@@ -211,6 +265,7 @@ function mul_v_s(v, s) {
 	    }
 	}
     }
+    return v;
 }
 // vector-vector ops
 
@@ -265,8 +320,11 @@ function equal_v(a,b) {
 */
 }
 
+// adds two vectors, real or complex, returns new vector
+function add_v(a, b) {
+    
+}
 
-// tests
 
 // matrix-matrix ops
 
