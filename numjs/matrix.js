@@ -211,8 +211,6 @@ function add_v_s(v, s, N) {
 	}
     }
 
-
-
     return v;
 }
 
@@ -268,7 +266,21 @@ function mul_v_s(v, s) {
     return v;
 }
 // vector-vector ops
-
+function clone_v(v) {
+    var res, re;
+    if(v[0] && v[0].length  && v[1] && v[1].length) {
+	res = [ v[0].slice(0), v[1].slice(0)];
+    } else if(v[0] && v[0].length) {
+	res = [ v[0].slice(0) ];
+    } else if(v[1] && v[1].length) {
+	re = [];
+	v[1].forEach(function(v,i) { re[i] = 0; } );
+	res = [ re, v[1].slice(0) ];
+    } else {
+	res = [[]];
+    }
+    return res;
+}
 // returns true if both vectors are equal
 function equal_v(a,b) {
   var v0, v1, n, N;
@@ -320,156 +332,88 @@ function equal_v(a,b) {
 */
 }
 
-// adds two vectors, real or complex, returns new vector
+// add vector b to vector a, real or complex, returns vector a
 function add_v(a, b) {
+  var re, im;    
+
+  // add real entries
+  if(b[0]) {
+      if(!a[0]){
+	  a[0] = b[0].slice(0);
+      } else {
+	  re = a[0];
+	  b[0].forEach(function(v,i) { re[i] = re[i] ? re[i] + v : v; });      
+      }
+  }
+
+  // add im entries
+  if(b[1]) {
+      if(!a[1]) {
+	  a[1] = b[1].slice(0);
+      } else {
+	  im = a[1];
+	  b[1].forEach(function(v,i) { im[i] = im[i] ? im[i] + v : v; });
+      }
+  }
+
+  return a;
+}
+
+// Add vector b multiplied by scalar s to a, return a
+function add_v_mul_s(a, b, s) {
+  var re, im;    
+    
+  // non optimised implementation
+  return add_v(a, mul_v_s(clone_v(b), s));
+}
+
+// multiplies two vectors element wise (.), real or complex, returns new vector
+function dmul_v(a, b) {
     
 }
 
+// multiplies two vectors, real or complex, returns scalar
+function mul_v(a, b) {
+    var re = 0, im = 0, a0, a1, b0, b1, r0, r1, i0, i1;
+    // one of the vectors has imaginary values
 
-// matrix-matrix ops
+    if (a[1] || b[1]) {
+	// calculate complex sum
 
-// Multiplies matrix a with matrix b, returns result in new matrix
-function mul_m(a, b) {
-    var res, i, j, r, c, s, n, N;
-    // A r,c x r,c
-    if(a.dim[1] !== b.dim[0]) {
-	throw new("operator *: nonconformant arguments " + a.dim[0] + "x" + a.dim[1] + ", " + b.dim[0] + "x" + b.dim[1]);
-    }
-    
-    N = a.dim[1];
-
-    r = a.dim[0];
-    c = b.dim[1];
-
-    debug("result size: " + r + ", " + c);
-
-    res = new Matrix(r, c);
-
-    // 3x1 * 1x3 = 3x3
-
-    // 1x3 * 3x1 = 1x1
-
-    // matrix is real
-    if(!a.im.length && !b.im.length) {
-	for(i = 0; i < r; i++) {
-	    res.re[i] = [];
-	    for(j = 0; j < c; j++) {
-		s = 0;
-		if (a.re[i]) {
-		    for(n = 0; n < N; n++) {
-			if(a.re[i][n] && b.re[n] && b.re[n][j]) {
-			    s += a.re[i][n] * b.re[n][j];
-			}
-		    }
-		}
-		res.re[i].push(s);
-	    }
-	}
-	// complex matrix
-    } else {
-	for(i = 0; i < r; i++) {
-	    res.re[i] = [];
-	    res.im[i] = [];
-
-	    for(j = 0; j < c; j++) {
-		s = [0,0];
-		
-		if(a.re[i] && a.im[i]) {
-		    for(n = 0; n < N; n++) {
-			debug("hard mul/add");
-			s = add_s(s,mul_s( [a.re[i][n], a.im[i][n]], [ b.re[n] && b.re[n][j], b.im[n] && b.im[n][j] ]));
-		    } 
-		} else {
-		    for(n = 0; n < N; n++) {
-			debug("safe mul/add");
-			s = add_s(s,mul_s( [a.re[i] && a.re[i][n], a.im[i] && a.im[i][n] ], 
-					   [b.re[n] && b.re[n][j], b.im[n] && b.im[n][j] ]));
-		    }
-
-		}
-		res.re[i].push(s[0]);
-		res.im[i].push(s[1]);
-	    }
-	}
-
-    }
-
-    return res;
-}
-
-// add b to a, return a
-function add_m(a,b) {
-    var i, j, J, n, s, t, a_re, b_re, a_im, b_im;
-
-    if(a.dim.length === b.dim.length) {
-
-	i = [];
-	
-	for(n = 0; n < a.dim.length; n++) {
-	    if( a.dim[n] !== b.dim[n] ) {
-		break;
-	    }
-	    i[n] = 0;
-	}
-	// dimensions agree
-
-	var num = 0;
-
-	// and the matrices has the same dimension, do the adding
-	if(n === a.dim.length) {
-
-	    // i is an index counter array used to index each row in the matrices
-
-	    i.pop(); // remove last index
-	    J = a.dim[a.dim.length-1]; // J is the number of elements in each row
+	if (a[1] && b[1]) {
+	    // both vectors has complex values
+	    a0 = a[0] ? a[0] : [];
+	    a1 = a[1] ? a[1] : [];
 	    
-	    do {
-		s = a.getrow(i);
-		t = b.getrow(i);
+	    b0 = b[0] ? b[0] : [];
+	    b1 = b[1] ? b[1] : [];
 
-		a_re = s[0];
-		a_im = s[1];
-
-		b_re = t[0];
-		b_im = t[1];
-
-		debug("iteration ", num++);
-		debug("index ", i);
-		debug("add: " + t + " to " + s);
-
-		if(num > 10) {
-		    return a;
-		}
-
-		if(b_re) {
-		    if(!a_re) {
-			a_re = b_re.slice(0);
-		    } else {
-			for(j = 0; j < J; j++) {
-			    a_re[j] = a_re[j] ? a_re[j] + b_re[j] : b_re[j];
-			}		    			
-		    }
-		}
-
-		if(b_im) {
-		    if(!a_im) {
-			a_im = b_im.slice(0);
-		    } else {
-			for(j = 0; j < J; j++) {
-			    a_im[j] = a_im[j] ? a_im[j] + b_im[j] : b_im[j];
-			}		    			
-		    }
-		}
+	    a0.forEach(function(v,i) { if ((r1=b0[i])) { r0=v; i0=a1[i]; i1=b1[i]; re += r0*r1-i0*i1; im+=i0*r1+r0*i1; } });
+	} else {
+	    // one of the vectors has complex values
+	    if (a[1]) {
+		a0 = b[0] ? b[0] : []; // the real vector
 		
-		a.setrow(i, a_re, a_im);
+		b0 = a[0]; // the complex vector
+		b1 = a[1];
+	    } else {
+		a0 = a[0] ? a[0] : []; // the real vector
+		
+		b0 = b[0]; // the complex vector
+		b1 = b[1];		
+	    }
 
-	    } while(a.nextelem(i));
-	    return a;
+	    a0.forEach(function(v,i) { if ((r1=b0[i])) { re += v*b0[i]; im += v*b1[i]; } } );
 	}
+	return [re, im];
+    } else {
+	re = 0;
+	b0 = b[0];
+	a[0].forEach(function(v,i) { if((r0=b0[i])) { re += b0[i]*v; } } );
+	return re;
     }
-
-    throw new("operator +: nonconformant arguments " + a.dim[0] + "x" + a.dim[1] + ", " + b.dim[0] + "x" + b.dim[1]);
 }
+
 
 function Matrix() {
     var n, i;
@@ -722,6 +666,152 @@ function Matrix() {
 	}
     };
 }
+
+// matrix-matrix ops
+
+// Multiplies matrix a with matrix b, returns result in new matrix
+function mul_m(a, b) {
+    var res, i, j, r, c, s, n, N;
+    // A r,c x r,c
+    if(a.dim[1] !== b.dim[0]) {
+	throw new("operator *: nonconformant arguments " + a.dim[0] + "x" + a.dim[1] + ", " + b.dim[0] + "x" + b.dim[1]);
+    }
+    
+    N = a.dim[1];
+
+    r = a.dim[0];
+    c = b.dim[1];
+
+    debug("result size: " + r + ", " + c);
+
+    res = new Matrix(r, c);
+
+    // 3x1 * 1x3 = 3x3
+
+    // 1x3 * 3x1 = 1x1
+
+    // matrix is real
+    if(!a.im.length && !b.im.length) {
+	for(i = 0; i < r; i++) {
+	    res.re[i] = [];
+	    for(j = 0; j < c; j++) {
+		s = 0;
+		if (a.re[i]) {
+		    for(n = 0; n < N; n++) {
+			if(a.re[i][n] && b.re[n] && b.re[n][j]) {
+			    s += a.re[i][n] * b.re[n][j];
+			}
+		    }
+		}
+		res.re[i].push(s);
+	    }
+	}
+	// complex matrix
+    } else {
+	for(i = 0; i < r; i++) {
+	    res.re[i] = [];
+	    res.im[i] = [];
+
+	    for(j = 0; j < c; j++) {
+		s = [0,0];
+		
+		if(a.re[i] && a.im[i]) {
+		    for(n = 0; n < N; n++) {
+			debug("hard mul/add");
+			s = add_s(s,mul_s( [a.re[i][n], a.im[i][n]], [ b.re[n] && b.re[n][j], b.im[n] && b.im[n][j] ]));
+		    } 
+		} else {
+		    for(n = 0; n < N; n++) {
+			debug("safe mul/add");
+			s = add_s(s,mul_s( [a.re[i] && a.re[i][n], a.im[i] && a.im[i][n] ], 
+					   [b.re[n] && b.re[n][j], b.im[n] && b.im[n][j] ]));
+		    }
+
+		}
+		res.re[i].push(s[0]);
+		res.im[i].push(s[1]);
+	    }
+	}
+
+    }
+
+    return res;
+}
+
+// add b to a, return a
+function add_m(a,b) {
+    var i, j, J, n, s, t, a_re, b_re, a_im, b_im;
+
+    if(a.dim.length === b.dim.length) {
+
+	i = [];
+	
+	for(n = 0; n < a.dim.length; n++) {
+	    if( a.dim[n] !== b.dim[n] ) {
+		break;
+	    }
+	    i[n] = 0;
+	}
+	// dimensions agree
+
+	var num = 0;
+
+	// and the matrices has the same dimension, do the adding
+	if(n === a.dim.length) {
+
+	    // i is an index counter array used to index each row in the matrices
+
+	    i.pop(); // remove last index
+	    J = a.dim[a.dim.length-1]; // J is the number of elements in each row
+	    
+	    do {
+		s = a.getrow(i);
+		t = b.getrow(i);
+
+		a_re = s[0];
+		a_im = s[1];
+
+		b_re = t[0];
+		b_im = t[1];
+
+		debug("iteration ", num++);
+		debug("index ", i);
+		debug("add: " + t + " to " + s);
+
+		if(num > 10) {
+		    return a;
+		}
+
+		if(b_re) {
+		    if(!a_re) {
+			a_re = b_re.slice(0);
+		    } else {
+			for(j = 0; j < J; j++) {
+			    a_re[j] = a_re[j] ? a_re[j] + b_re[j] : b_re[j];
+			}		    			
+		    }
+		}
+
+		if(b_im) {
+		    if(!a_im) {
+			a_im = b_im.slice(0);
+		    } else {
+			for(j = 0; j < J; j++) {
+			    a_im[j] = a_im[j] ? a_im[j] + b_im[j] : b_im[j];
+			}		    			
+		    }
+		}
+		
+		a.setrow(i, a_re, a_im);
+
+	    } while(a.nextelem(i));
+	    return a;
+	}
+    }
+
+    throw new("operator +: nonconformant arguments " + a.dim[0] + "x" + a.dim[1] + ", " + b.dim[0] + "x" + b.dim[1]);
+}
+
 
 // creates a 1xN sized matrix, a vector.
 function Vector() {

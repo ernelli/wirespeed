@@ -47,6 +47,7 @@ assert(equal_s(a,c));
 
 // testing vector primitives
 print("Testing vector primitives");
+
 assert(equal_v([[1,2,3],[]],[[1,2,3],[]]));
 assert(!equal_v([[1,,3],[]],[[1,2,3],[]]));
 assert(equal_v([[1,,3],[]],[[1,0,3],[]]));
@@ -80,8 +81,51 @@ assert(!equal_v(v,r));
 mul_v_s(v, [0,1]);
 assert(equal_v(v,r));
 
+var a = clone_v(v);
+var b = clone_v(v);
+add_v(a,a);
+mul_v_s(b,2);
+
+a = [ , [1 ,-1 , 0]]; // im only
+b = [ [1, 2, 3], ];   // real only
+
+assert(equal_v(a,clone_v(a)) );
+assert(!equal_v(a,clone_v(b)) );
+print("vector clone ok");
+
+assert(equal_v(add_v(clone_v(a), clone_v(b)),add_v(clone_v(b), clone_v(a))));
+
+print("test mul_v, scalar multiplication");
+
+// test single entry multiplication
+assert(equal_s(mul_v([[1],[2]],[[-1], [1] ]),mul_s([1,2], [-1,1])));
+assert(!equal_s(mul_v([[1],[2]],[[-1], [1] ]),mul_s([1,2], [1,1])));
+// testing array multiplication
+assert(equal_s(mul_v([[1,1,1,1],[2,2,2,2]],[[-1,-1,-1,-1], [1,1,1,1] ]),mul_s(4,mul_s([1,2], [-1,1]))));
+assert(equal_s(mul_v([[1,1,1,,,1],[2,2,2,,,2]],[[-1,-1,-1,,,-1], [1,1,1,,,1] ]),mul_s(4,mul_s([1,2], [-1,1]))));
+
+// check that zero entry doesnt count
+assert(equal_s(mul_v([[1,1,1,0,1],[2,2,2,0,2]],[[-1,-1,-1,-1,-1], [1,1,1,1,1] ]),mul_s(4,mul_s([1,2], [-1,1]))));
+
+// check that real array * complex works
+assert(equal_s(mul_v([[1,1,1,0,1],[2,2,2,0,2]],[[-1,-1,-1,-1,-1] ]),mul_s(-4,[1,2])));
+assert(equal_s(mul_v([[-1,-1,-1,-1,-1] ],[[1,1,1,0,1],[2,2,2,0,2]]),mul_s(-4,[1,2])));
+assert(equal_s(mul_v([[-1,,-1,-1,,-1,-1] ],[[1,,1,1,,0,1],[2,,2,2,,0,2]]),mul_s(-4,[1,2])));
+
+// check that real array*array works
+assert(equal_s(mul_v([[1,1,1,0,1]],[[-1,-1,-1,-1,-1]]), -4));
+assert(!equal_s(mul_v([[1,1,1,0,1]],[[-1,-1,-1,-1,-1]]), -5));
+assert(!equal_s(mul_v([[,,1,1,1,0,1]],[[,,-1,-1,-1,-1,-1]]), -5));
+
+assert(equal_s(mul_v([[]],[[]]), 0));
+assert(equal_s(mul_v([[],[]],[[]]), 0));
+assert(equal_s(mul_v([[]],[[],[]]), 0));
+assert(equal_s(mul_v([[],[]],[[],[]]), 0));
+
 print("Vector primitives passed");
 
+
+if (false) {
 var A = new Matrix(3);
 print(A);
 
@@ -147,3 +191,4 @@ print(P);
 inv = inverse(G);
 print(inv);
 
+}
