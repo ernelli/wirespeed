@@ -3,12 +3,16 @@ load('gauss.js');
 
 function assert(x) {
     if(!x) {
+	(null).fail();
 	//print("Assertion failed");
 	throw new Error("Assertion failed");
 	//throw new RhinoException("Assertion failed");
 	//throw new exception("Assertion failed");
     }
 }
+
+try {
+    
 
 print("Testing scalar primitives");
 
@@ -85,6 +89,7 @@ var a = clone_v(v);
 var b = clone_v(v);
 add_v(a,a);
 mul_v_s(b,2);
+assert(equal_v(a,b));
 
 a = [ , [1 ,-1 , 0]]; // im only
 b = [ [1, 2, 3], ];   // real only
@@ -121,6 +126,22 @@ assert(equal_s(mul_v([[]],[[]]), 0));
 assert(equal_s(mul_v([[],[]],[[]]), 0));
 assert(equal_s(mul_v([[]],[[],[]]), 0));
 assert(equal_s(mul_v([[],[]],[[],[]]), 0));
+
+print("test dmul_v, vector vector element multiplication");
+
+// check real vectors, full and sparse
+assert(equal_v(dmul_v([[1,0,1,0]], [[0,1,0,1]]), []));
+assert(equal_v(dmul_v([[1,0,1,0]], [[,1,,1]]), []));
+assert(equal_v(dmul_v([[1,,1,]], [[,1,,1]]), []));
+
+assert(equal_v(dmul_v([[1,1,1,1]], [[1,1]]), [[1,1]]));
+assert(equal_v(dmul_v([[1,1]], [[1,1,1,1]]), [[1,1]]));
+
+// check sparse complex vectors
+assert(equal_v(dmul_v([ [1,1,1,1],[1,1,1,1] ], [ [1,1,1,1], [1,1,1,1] ]), mul_v_s( [ [1,1,1,1], [1,1,1,1] ], [1,1]) ));
+assert(equal_v(dmul_v([ [1,,1,1],[1,,1,1] ], [ [,1,1,1], [,1,1,1] ]), dmul_v([ [1,0,1,1],[1,0,1,1] ], [ [0,1,1,1], [0,1,1,1] ]) ));
+assert(equal_v(dmul_v([ [1,1],[1,1] ], [ [,1,1,1], [,1,1,1] ]), dmul_v([ [1,1],[1,1] ], [ [0,1], [0,1] ]) ));
+assert(equal_v(dmul_v([ [1,1],[1,1] ], [ [,1,1,1], [,1,1,1] ]), dmul_v([ [1,1],[1,1] ], [ [0,1], [0,1] ]) ));
 
 print("Vector primitives passed");
 
@@ -191,4 +212,12 @@ print(P);
 inv = inverse(G);
 print(inv);
 
+}
+
+} catch (e) {
+    print("Testcase failed with [" + e.name + "] : ", e, " at file: " + e.fileName + ", line " + e.lineNumber);
+    //    print("message: " + e.rhinoException.getLineNumber());
+    if(e.rhinoException) {
+	print("stack: " + e.rhinoException.getScriptStackTrace());
+    }
 }

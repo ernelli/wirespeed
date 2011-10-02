@@ -367,9 +367,63 @@ function add_v_mul_s(a, b, s) {
   return add_v(a, mul_v_s(clone_v(b), s));
 }
 
-// multiplies two vectors element wise (.), real or complex, returns new vector
+// dot mul vector, multiply each element of vector a with each element of vector b, real or complex, returns a
 function dmul_v(a, b) {
-    
+    var N, n, a0, a1, b0, b1, r0, r1, i0, i1;
+
+    if (a[1] || b[1]) {
+	// calculate complex sum
+
+	if (a[1] && b[1]) {
+	    // both vectors has complex values
+	    a0 = a[0] ? a[0] : [];
+	    a1 = a[1] ? a[1] : [];
+	    
+	    b0 = b[0] ? b[0] : [];
+	    b1 = b[1] ? b[1] : [];
+
+	    N = Math.min(a0.length, b0.length);
+
+	    a0.length = N;
+	    a1.length = N;
+
+	    a0.forEach(function(v,i) { if ((r1=b0[i])) { r0=v; i0=a1[i]; i1=b1[i]; a0[i] = r0*r1-i0*i1; a1[i]=i0*r1+r0*i1; } });
+	} else {
+	    // setup so that a0,a1 represents the complex vector and b0 the real vector
+
+	    // one of the vectors has complex values, e.g become a0, a1
+	    if (a[1]) {
+		b0 = b[0]; // the real vector
+	    } else {
+		b0 = a[0] ? a[0] : []; // the real vector
+		
+		// need to clone b into a since b may not be altered
+		a0 = b[0].slice(0);
+		a1 = b[1].slice(0);		
+	    }
+
+	    // truncate a to honor sparse b, or sparse a
+	    N = Math.min(a0.length, b0.length);
+
+	    a0.length = N;
+	    a1.length = N;
+
+	    a0.forEach(function(v,i) { if (b0[i]) { a0[i]*=b0[i]; a1[i]*=b0[i]; } else { a0[i] = 0; a1[i] = 0; } } );
+	}
+	return [a0, a1];
+    } else {
+	a0 = a[0] ? a[0] : [];
+	b0 = b[0] ? b[0] : [];
+
+	// honor the sparseness of b
+	N = Math.min(a0.length, b0.length);
+
+	a0.length = N;
+
+	a0.forEach(function(v,i) { a0[i] = b0[i] ? v*b0[i] : 0; } );
+
+	return [a0];
+    }    
 }
 
 // multiplies two vectors, real or complex, returns scalar
@@ -403,7 +457,7 @@ function mul_v(a, b) {
 		b1 = b[1];		
 	    }
 
-	    a0.forEach(function(v,i) { if ((r1=b0[i])) { re += v*b0[i]; im += v*b1[i]; } } );
+	    a0.forEach(function(v,i) { if ((b0[i])) { re += v*b0[i]; im += v*b1[i]; } } );
 	}
 	return [re, im];
     } else {
