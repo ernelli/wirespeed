@@ -157,6 +157,23 @@ function div_s(a,b) {
     }    
 }
 
+// abs scalar
+
+function abs_s(s) {
+    
+    if(typeof s === "number") {
+	return s < 0 ? -s : s;
+    } else {
+	if (s[0] && s[1]) {
+	    return Math.sqrt(s[0]*s[0]+s[1]*s[1]);
+	} else if(s[0]) {
+	    return s[0] < 0 ? -s[0] : s[0] == undefined ? 0 : s[0];
+	} else {
+	    return s[1] < 0 ? -s[1] : s[1] == undefined ? 0 : s[1];
+	}
+    }
+}
+
 // vector-scalar functions
 
 // v = [ re[], im[] ]
@@ -564,7 +581,7 @@ function Matrix() {
     };
 
     //adresses one full row in matrix, always returns an array of [re, im]
-    //row,col index is zero based. Lack of values is indicated by false, not empty array
+    //row,col index is zero based. Lack of values is indicated by empty, not empty array
     this.getrow = function(index) {
 	var i, re, im;	
 
@@ -578,7 +595,7 @@ function Matrix() {
 		re = re ? re[index[i]] : false;
 		im = im ? im[index[i]] : false;
 	    }
-	    return [re && re.length ? re : false, im && im.length ? im : false];
+	    return [re && re.length ? re : undefined, im && im.length ? im : undefined];
 	}	
 	throw new("error: getrow : Index dimension not equal to matrix dimension - 1");
     };

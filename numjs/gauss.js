@@ -1,3 +1,74 @@
+function gauss_im(a)
+{
+    var M, N, m, n, mp, pv, re, im, p, z, max, imax, tmp;
+
+    if(a.dim.length > 2) {
+	throw new("error: invalid conversion of NDArray to Matrix");
+    }
+
+    M = a.dim[0];
+    N = a.dim[1];
+
+    re = a.re;
+    im = a.im;
+
+    // initialise the pivot array
+    p = [];
+    for(m = 0; m < M; m++) {
+	p[m] = m;
+    }
+
+    print("Start gauss elimination on\n" + a);
+
+    // Work down along all rows
+    for(m = 0; m < M; m++) {
+	max = re[m] ? abs_s([re[m][m], im[m][m]]) : 0;
+	imax = m;
+	for(n = m+1; n < M; n++) {
+	    if(re[n] && (tmp=abs_s([re[n][m],im[n][m]])) > max) {
+		max = tmp;
+		imax = n;
+	    }
+	}
+
+	// swap curr row with the row with the largest pivoting element
+	if (imax !== m) {
+	    print("swap: " + imax + ", " + m);
+	    // mark the swap in the pivot array
+	    tmp = p[imax];
+	    p[imax] = p[m];
+	    p[m] = tmp;
+
+	    tmp = re[imax];
+	    re[imax] = re[m];
+	    re[m] = tmp;
+
+	    tmp = im[imax];
+	    im[imax] = im[m];
+	    im[m] = tmp;
+	}
+	
+	for(mp = m+1; mp < M; mp++) {
+	    pv = -div_s([re[mp][m]?re[mp][m]:0, im[mp][m]?im[mp][m]:0], [re[m][m]?re[m][m]:0, im[m][m]?im[m][m]:0]) ;
+
+	    delete re[mp][m];
+	    delete im[mp][m];
+
+	    add_v_mul_s([re[mp],im[mp]], [re[m][n],im[m][n]], pv);
+	}
+
+	mul_v_s([re[m],im[m]], div_s(1, [re[m][m],im[m][m]]));
+
+	re[m][m] = 1;
+	im[m][m] = 0;
+    }
+
+    //print("return Pivot array: " + p);
+
+    return p;
+}
+
+
 function gauss_real(a)
 {
     var M, N, m, n, mp, pv, re, p, z, max, imax, tmp;
