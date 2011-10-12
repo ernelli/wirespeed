@@ -1,5 +1,7 @@
 var enableDebug;
 
+load('seedrandom.js');
+
 if(enableDebug) {
     function debug(str) {
 	print(str);
@@ -269,6 +271,7 @@ function mul_v_s(v, s) {
 
 	    // check if complex scalar
 	    if(s1) {
+		v[1] = im = [];
 		for(n = 0; n < N; n++) {
 		    im[n] = re[n] *s1;
 		    re[n] *= s0;
@@ -740,6 +743,20 @@ function Matrix() {
 
 // matrix-matrix ops
 
+function mul_m_s(a,b) {
+    var n, e;
+
+    n = a.firstrow();
+
+    do {
+	e = a.getrow(n);
+	mul_v_s(e,b);
+	a.setrow(n,e[0],e[1]);
+    }  while(a.nextelem(n));
+
+    return a;
+}
+
 // Multiplies matrix a with matrix b, returns result in new matrix
 function mul_m(a, b) {
     var res, i, j, r, c, s, n, N;
@@ -908,6 +925,40 @@ function eye() {
 	re[m] = 1;
 	a.re[m] = re;
     }
+
+    return a;
+}
+
+function ones() {
+    var n, i, I, a = {}, e, re;
+    Matrix.apply(a, arguments);
+
+    debug("got a matrix: " + size(a));
+ 
+    n = a.firstrow();
+
+     // inner loop length
+    I = a.dim[a.dim.length-1];
+
+    debug("inner loop length: " + I);
+
+    do {
+	debug("getrow from a, index: " + n + ", a.dim: " + a.dim);
+	e = a.getrow(n);
+	
+	if(e[0]) {
+	    re = e[0];
+	} else {
+	    re = [];
+	}
+
+	for(i = 0; i < I; i++) {
+	    re[i] = 1;
+	}
+	
+	a.setrow(n, re, false);
+
+    } while(a.nextelem(n));
 
     return a;
 }

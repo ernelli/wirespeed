@@ -49,6 +49,15 @@ c = mul_s(c, b);
 c = mul_s(c, b);
 assert(equal_s(a,c));
 
+assert(abs_s(-1) == 1);
+assert(abs_s(2) == 2);
+assert(abs_s([2,0]) == 2);
+assert(abs_s([2,]) == 2);
+assert(abs_s([,3]) == 3);
+assert(abs_s([,-3]) == 3);
+assert(abs_s([3,-4]) == 5);
+assert(abs_s([-3,4]) == 5);
+
 // testing vector primitives
 print("Testing vector primitives");
 
@@ -90,6 +99,13 @@ var b = clone_v(v);
 add_v(a,a);
 mul_v_s(b,2);
 assert(equal_v(a,b));
+
+a = [ [1,,3],[0,,0] ]; // sparse real
+mul_v_s(a,2);
+assert(equal_v(a,[[2,0,6]]));
+mul_v_s(a,[,1]);
+assert(equal_v(a,[,[2,0,6]]));
+
 
 a = [ , [1 ,-1 , 0]]; // im only
 b = [ [1, 2, 3], ];   // real only
@@ -145,6 +161,20 @@ assert(equal_v(dmul_v([ [1,1],[1,1] ], [ [,1,1,1], [,1,1,1] ]), dmul_v([ [1,1],[
 
 print("Vector primitives passed");
 
+print("testing matrix primitives");
+
+var A = ones(3,3);
+print(mul_m_s(A,2));
+print("A.im: " + typeof A.im);
+print(mul_m_s(A,[1,2]));
+
+print("testing gauss elimination");
+
+Math.seedrandom(4711);
+var A = add_m(ones(3,3), mul_m_s(rand(3),-2) );
+print(A);
+
+print(inverse(A));
 
 if (false) {
 var A = new Matrix(3);
