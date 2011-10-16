@@ -1,7 +1,5 @@
 var enableDebug;
 
-load('seedrandom.js');
-
 if(enableDebug) {
     function debug(str) {
 	print(str);

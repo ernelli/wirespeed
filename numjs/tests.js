@@ -1,3 +1,5 @@
+load('seedrandom.js');
+
 load('matrix.js');
 load('gauss.js');
 
@@ -13,7 +15,6 @@ function assert(x) {
 
 try {
     
-
 print("Testing scalar primitives");
 
 assert(equal_s([1,0],[1,0]));
@@ -52,7 +53,7 @@ assert(equal_s(a,c));
 assert(abs_s(-1) == 1);
 assert(abs_s(2) == 2);
 assert(abs_s([2,0]) == 2);
-assert(abs_s([2,]) == 2);
+assert(abs_s([2]) == 2);
 assert(abs_s([,3]) == 3);
 assert(abs_s([,-3]) == 3);
 assert(abs_s([3,-4]) == 5);
@@ -65,7 +66,7 @@ assert(equal_v([[1,2,3],[]],[[1,2,3],[]]));
 assert(!equal_v([[1,,3],[]],[[1,2,3],[]]));
 assert(equal_v([[1,,3],[]],[[1,0,3],[]]));
 assert(equal_v([[1,,3],[]],[[1,,3],[]]));
-assert(!equal_v([[1,,3],[]],[[1,,],[]]));
+assert(!equal_v([[1,,3],[]],[[1],[]]));
 assert(equal_v([[1,,3],[]],[[1,,3,0,0,0,0,0,0],[]]));
 
 assert(!equal_v([[],[1]],[[]]));
@@ -148,7 +149,7 @@ print("test dmul_v, vector vector element multiplication");
 // check real vectors, full and sparse
 assert(equal_v(dmul_v([[1,0,1,0]], [[0,1,0,1]]), []));
 assert(equal_v(dmul_v([[1,0,1,0]], [[,1,,1]]), []));
-assert(equal_v(dmul_v([[1,,1,]], [[,1,,1]]), []));
+assert(equal_v(dmul_v([[1,,1]], [[,1,,1]]), []));
 
 assert(equal_v(dmul_v([[1,1,1,1]], [[1,1]]), [[1,1]]));
 assert(equal_v(dmul_v([[1,1]], [[1,1,1,1]]), [[1,1]]));
