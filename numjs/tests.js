@@ -1,5 +1,4 @@
 load('seedrandom.js');
-
 load('matrix.js');
 load('gauss.js');
 
@@ -54,23 +53,23 @@ assert(abs_s(-1) == 1);
 assert(abs_s(2) == 2);
 assert(abs_s([2,0]) == 2);
 assert(abs_s([2]) == 2);
-assert(abs_s([,3]) == 3);
-assert(abs_s([,-3]) == 3);
+assert(abs_s([0,3]) == 3);
+assert(abs_s([0,-3]) == 3);
 assert(abs_s([3,-4]) == 5);
 assert(abs_s([-3,4]) == 5);
 
 // testing vector primitives
 print("Testing vector primitives");
 
-assert(equal_v([[1,2,3],[]],[[1,2,3],[]]));
-assert(!equal_v([[1,,3],[]],[[1,2,3],[]]));
-assert(equal_v([[1,,3],[]],[[1,0,3],[]]));
-assert(equal_v([[1,,3],[]],[[1,,3],[]]));
-assert(!equal_v([[1,,3],[]],[[1],[]]));
-assert(equal_v([[1,,3],[]],[[1,,3,0,0,0,0,0,0],[]]));
+assert(equal_v([[1,2,3]],[[1,2,3]]));
+assert(!equal_v([[1,0,3]],[[1,2,3]]));
+assert(equal_v([[1,0,3]],[[1,0,3]]));
+assert(equal_v([[1,0,3]],[[1,0,3]]));
+assert(!equal_v([[1,0,3],[0,0,0]],[[1],[0]]));
+assert(!equal_v([[1,0,3],[0,0,0]],[[1,0,3,0,0,0,0,0,0],[0,0,0]]));
 
-assert(!equal_v([[],[1]],[[]]));
-assert(equal_v([[],[1]],[,[1]]));
+assert(!equal_v([[0],[1]],[[0]]));
+assert(equal_v([[0],[1]],[[0],[1]]));
 
 var v = [];
 v[0] = [1, 2, 3, 4, 5, 6, 7, 8];
@@ -101,15 +100,15 @@ add_v(a,a);
 mul_v_s(b,2);
 assert(equal_v(a,b));
 
-a = [ [1,,3],[0,,0] ]; // sparse real
+a = [ [1,0,3],[0,0,0] ];
 mul_v_s(a,2);
 assert(equal_v(a,[[2,0,6]]));
-mul_v_s(a,[,1]);
-assert(equal_v(a,[,[2,0,6]]));
+mul_v_s(a,[0,1]);
+assert(equal_v(a,[[0,0,0],[2,0,6]]));
 
 
-a = [ , [1 ,-1 , 0]]; // im only
-b = [ [1, 2, 3], ];   // real only
+a = [ [0,0,0], [1 ,-1 , 0]]; // im only
+b = [ [1, 2, 3]];   // real only
 
 assert(equal_v(a,clone_v(a)) );
 assert(!equal_v(a,clone_v(b)) );
@@ -124,7 +123,7 @@ assert(equal_s(mul_v([[1],[2]],[[-1], [1] ]),mul_s([1,2], [-1,1])));
 assert(!equal_s(mul_v([[1],[2]],[[-1], [1] ]),mul_s([1,2], [1,1])));
 // testing array multiplication
 assert(equal_s(mul_v([[1,1,1,1],[2,2,2,2]],[[-1,-1,-1,-1], [1,1,1,1] ]),mul_s(4,mul_s([1,2], [-1,1]))));
-assert(equal_s(mul_v([[1,1,1,,,1],[2,2,2,,,2]],[[-1,-1,-1,,,-1], [1,1,1,,,1] ]),mul_s(4,mul_s([1,2], [-1,1]))));
+assert(equal_s(mul_v([[1,1,1,0,0,1],[2,2,2,0,0,2]],[[-1,-1,-1,0,0,-1], [1,1,1,0,0,1] ]),mul_s(4,mul_s([1,2], [-1,1]))));
 
 // check that zero entry doesnt count
 assert(equal_s(mul_v([[1,1,1,0,1],[2,2,2,0,2]],[[-1,-1,-1,-1,-1], [1,1,1,1,1] ]),mul_s(4,mul_s([1,2], [-1,1]))));
@@ -132,12 +131,12 @@ assert(equal_s(mul_v([[1,1,1,0,1],[2,2,2,0,2]],[[-1,-1,-1,-1,-1], [1,1,1,1,1] ])
 // check that real array * complex works
 assert(equal_s(mul_v([[1,1,1,0,1],[2,2,2,0,2]],[[-1,-1,-1,-1,-1] ]),mul_s(-4,[1,2])));
 assert(equal_s(mul_v([[-1,-1,-1,-1,-1] ],[[1,1,1,0,1],[2,2,2,0,2]]),mul_s(-4,[1,2])));
-assert(equal_s(mul_v([[-1,,-1,-1,,-1,-1] ],[[1,,1,1,,0,1],[2,,2,2,,0,2]]),mul_s(-4,[1,2])));
+assert(equal_s(mul_v([[-1,0,-1,-1,0,-1,-1] ],[[1,0,1,1,0,0,1],[2,0,2,2,0,0,2]]),mul_s(-4,[1,2])));
 
 // check that real array*array works
 assert(equal_s(mul_v([[1,1,1,0,1]],[[-1,-1,-1,-1,-1]]), -4));
 assert(!equal_s(mul_v([[1,1,1,0,1]],[[-1,-1,-1,-1,-1]]), -5));
-assert(!equal_s(mul_v([[,,1,1,1,0,1]],[[,,-1,-1,-1,-1,-1]]), -5));
+assert(!equal_s(mul_v([[0,0,1,1,1,0,1]],[[0,0,-1,-1,-1,-1,-1]]), -5));
 
 assert(equal_s(mul_v([[]],[[]]), 0));
 assert(equal_s(mul_v([[],[]],[[]]), 0));
@@ -146,19 +145,19 @@ assert(equal_s(mul_v([[],[]],[[],[]]), 0));
 
 print("test dmul_v, vector vector element multiplication");
 
-// check real vectors, full and sparse
-assert(equal_v(dmul_v([[1,0,1,0]], [[0,1,0,1]]), []));
-assert(equal_v(dmul_v([[1,0,1,0]], [[,1,,1]]), []));
-assert(equal_v(dmul_v([[1,,1]], [[,1,,1]]), []));
+// check real vectors
+assert(equal_v(dmul_v([[1,0,1,0]], [[0,1,0,1]]), [[0,0,0,0]]));
+assert(equal_v(dmul_v([[1,0,1,0]], [[0,1,0,1]]), [[0,0,0,0]]));
+assert(equal_v(dmul_v([[1,0,1,0]], [[0,1,0,1]]), [[0,0,0,0]]));
 
 assert(equal_v(dmul_v([[1,1,1,1]], [[1,1]]), [[1,1]]));
 assert(equal_v(dmul_v([[1,1]], [[1,1,1,1]]), [[1,1]]));
 
 // check sparse complex vectors
 assert(equal_v(dmul_v([ [1,1,1,1],[1,1,1,1] ], [ [1,1,1,1], [1,1,1,1] ]), mul_v_s( [ [1,1,1,1], [1,1,1,1] ], [1,1]) ));
-assert(equal_v(dmul_v([ [1,,1,1],[1,,1,1] ], [ [,1,1,1], [,1,1,1] ]), dmul_v([ [1,0,1,1],[1,0,1,1] ], [ [0,1,1,1], [0,1,1,1] ]) ));
-assert(equal_v(dmul_v([ [1,1],[1,1] ], [ [,1,1,1], [,1,1,1] ]), dmul_v([ [1,1],[1,1] ], [ [0,1], [0,1] ]) ));
-assert(equal_v(dmul_v([ [1,1],[1,1] ], [ [,1,1,1], [,1,1,1] ]), dmul_v([ [1,1],[1,1] ], [ [0,1], [0,1] ]) ));
+assert(equal_v(dmul_v([ [1,0,1,1],[1,0,1,1] ], [ [0,1,1,1], [0,1,1,1] ]), dmul_v([ [1,0,1,1],[1,0,1,1] ], [ [0,1,1,1], [0,1,1,1] ]) ));
+assert(equal_v(dmul_v([ [1,1],[1,1] ], [ [0,1,1,1], [0,1,1,1] ]), dmul_v([ [1,1],[1,1] ], [ [0,1], [0,1] ]) ));
+assert(equal_v(dmul_v([ [1,1],[1,1] ], [ [0,1,1,1], [0,1,1,1] ]), dmul_v([ [1,1],[1,1] ], [ [0,1], [0,1] ]) ));
 
 print("Vector primitives passed");
 
@@ -172,10 +171,16 @@ print(mul_m_s(A,[1,2]));
 print("testing gauss elimination");
 
 Math.seedrandom(4711);
-var A = add_m(ones(3,3), mul_m_s(rand(3),-2) );
-print(A);
 
+var N = 3;
+
+var A = add_m(ones(N,N), mul_m_s(rand(N),-2) );
+print(A);
+print("-----------------");
+tic();
 print(inverse(A));
+toc();
+printMatlab(A);
 
 if (false) {
 var A = new Matrix(3);
@@ -236,11 +241,11 @@ print(R = rand(3,3));
 var G = new Matrix(3,3);
 G.re = [ [1,2,3],[6, 7, 9],[12, 13, 14]];
 var res = gauss_real(G.clone());
-P = res[1];
+var P = res[1];
 print(G);
 print(P);
 
-inv = inverse(G);
+var inv = inverse(G);
 print(inv);
 
 }

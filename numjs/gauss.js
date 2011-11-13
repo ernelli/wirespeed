@@ -107,8 +107,6 @@ function gauss_real(a)
 	}
     }
 
-    print("Start gauss elimination on\n" + a);
-
     // Work down along all rows
     for(m = 0; m < M; m++) {
 	max = re[m][m] ? Math.abs(re[m][m]) : 0;
@@ -122,7 +120,6 @@ function gauss_real(a)
 
 	// swap curr row with the row with the largest pivoting element
 	if (imax !== m) {
-	    print("swap: " + imax + ", " + m);
 	    // mark the swap in the pivot array
 	    tmp = p[imax];
 	    p[imax] = p[m];
@@ -141,15 +138,12 @@ function gauss_real(a)
 		re[mp][n] += pv*re[m][n];
 	    }
 	}
-
+        pv = 1/re[m][m];
 	for(n = m+1; n < N; n++) {
-	    re[m][n] /= re[m][m];
+	    re[m][n] *= pv;
 	}
 	re[m][m] = 1;
     }
-
-    //print("return Pivot array: " + p);
-
     return p;
 }
 
@@ -160,7 +154,7 @@ function gaussjordan_real(a)
     N = a.dim[1];
 
     p = gauss_real(a);
-    print("gauss eliminated matrix: \n" + a);
+    //print("gauss eliminated matrix: \n" + a);
 
     re = a.re;
 
@@ -174,8 +168,8 @@ function gaussjordan_real(a)
 	}
     }
 
-    print("row echelon matrix: \n" + a);
-    print("pivot array: " + p);
+    //print("row echelon matrix: \n" + a);
+    //print("pivot array: " + p);
 
     return p;
 }
@@ -198,17 +192,15 @@ function inverse(m) {
     i = m.firstrow();
     do {
 	re = m.getrow(i)[0].slice(0);
-	print("set 1 at " + n);
 	re[n++] = 1;
-	print("setrow: " + re);
         r.setrow(i, re, false);
     } while(m.nextelem(i));
 
-    print("Augmented matrix");
-    print(r);
+//    print("Augmented matrix");
+//    print(r);
     res = gaussjordan_real(r);
-    print("Inverse matrix");
-    print(r);
+//    print("Inverse matrix");
+//    print(r);
 
     n = m.dim[0];
     i = r.firstrow();

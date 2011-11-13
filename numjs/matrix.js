@@ -10,6 +10,55 @@ if(enableDebug) {
     }
 }
 
+
+function tic() {
+    var now;
+    now = new Date().getTime();
+    tic.start = now;
+}
+
+tic.start = new Date().getTime();
+
+function toc() {
+    var now, elapsed;
+    now = new Date().getTime();
+    elapsed = (now - tic.start)/1000;
+    tic.start = now;
+
+    print("Elapsed time is " + elapsed + " seconds .");
+
+    return elapsed;
+}
+
+
+
+function printMatlab(a) {
+    var m,n, re, im, str;
+
+    str = "[";
+
+    for(m = 0; m < a.dim[0]; m++) {
+        re = a.re[m] ? a.re[m] : [];
+        im = a.im[m] ? a.im[m] : [];
+        for(n = 0; n < a.dim[1]; n++) {
+            str += re[n] ? re[n] : 0 + " ";
+
+            if(im[n] && im[n] > 0) {
+                str += "+" + im[n] + "i ";
+            } else if (typeof im[n] != "undefined") {
+                str += im[n] + "i ";  
+            }
+            str += " ";
+        }
+        if(m == a.dim[0]-1) {
+            print(str + "]");
+        } else {
+            print(str + ";");            
+        }
+        str = "";
+    }
+}
+
 function isInteger(arg) {
     return (typeof arg === "number" && arg === Math.floor(arg));
 }
@@ -179,9 +228,9 @@ function abs_s(s) {
 // v = [ re[], im[] ]
 // s = number | [ re, im ]
 
-// add scalar to vector, note N indicates size of vector if vector is sparse
-function add_v_s(v, s, N) {
-    var n, re, im, s0, s1;
+// add scalar to vector
+function add_v_s(v, s) {
+    var N, n, re, im, s0, s1;
     
     if(typeof s === "number") {
 	s0 = s;
@@ -191,10 +240,9 @@ function add_v_s(v, s, N) {
 	s1 = s[1] ? s[1] : 0;
     }
 
+    N = v[0].length;
+
     // N not given, vector is not sparse
-    if (!N) {
-	N = v[0].length;
-    }
 
     // Process real part of vector
     if(s0) {
@@ -243,20 +291,14 @@ function mul_v_s(v, s) {
 	s1 = s[1] ? s[1] : 0;
     }
 
-    if (v[1] && v[1].length > 0) { // vector has both real and imaginary parts
-	if(v[0]) {
-	    re = v[0];
-	} else {
-	    re = [];
-	    v[0] = re;
-	}
-
+    if (v[1]) { // vector has both real and imaginary parts
+	re = v[0];
 	im = v[1];
 
-	N = Math.max(re.length, im.length);
+	N = re.length;
 	for(n = 0; n < N; n++) {
-	    v0 = re[n] ? re[n] : 0;
-	    v1 = im[n] ? im[n] : 0;
+	    v0 = re[n];
+	    v1 = im[n];
 
 	    re[n] =  v0*s0 - v1*s1;
 	    im[n] =  v1*s0 + v0*s1;
@@ -286,91 +328,90 @@ function mul_v_s(v, s) {
 // vector-vector ops
 function clone_v(v) {
     var res, re;
-    if(v[0] && v[0].length  && v[1] && v[1].length) {
+    if(v[0] && v[1] ) {
 	res = [ v[0].slice(0), v[1].slice(0)];
-    } else if(v[0] && v[0].length) {
+    } else if(v[0]) {
 	res = [ v[0].slice(0) ];
-    } else if(v[1] && v[1].length) {
-	re = [];
-	v[1].forEach(function(v,i) { re[i] = 0; } );
-	res = [ re, v[1].slice(0) ];
     } else {
-	res = [[]];
+	res = [];
     }
     return res;
 }
 // returns true if both vectors are equal
 function equal_v(a,b) {
-  var v0, v1, n, N;
+    var v0, v1, n, N;
     
   // check real
-  if(a[0] || b[0]) {
-      v0 = a[0] ? a[0] : [];
-      v1 = b[0] ? b[0] : [];
+    v0 = a[0];
+    v1 = b[0];
 
-      N = Math.max(v0.length, v1.length);
-      for(n = 0; n < N; n++) {
-	  if(v0[n] && v1[n] && v0[n] !== v1[n]) {
-	      return false;
-	  }
-	  if(v0[n] && !v1[n] || !v0[n] && v1[n]) {
-	      return false;
-	  }
-      }
-  }  
+    if(v0.length !== v1.length) {
+        return false;
+    }
 
-  if(a[1] || b[1]) {
-      v0 = a[1] ? a[1] : [];
-      v1 = b[1] ? b[1] : [];
+    N = v0.length;
+    for(n = 0; n < N; n++) {
+	if(v0[n] !== v1[n]) {
+	    return false;
+	}
+    }
+    
+    // check imaginary if present
 
-      N = Math.max(v0.length, v1.length);
-      for(n = 0; n < N; n++) {
-	  if(v0[n] && v1[n] && v0[n] !== v1[n]) {
-	      return false;
-	  }
-	  if(v0[n] && !v1[n] || !v0[n] && v1[n]) {
-	      return false;
-	  }
-      }
-  }  
+    if(a[1] || b[1]) {
+        v0 = a[1];
+        v1 = b[1];
 
-
-  return true;
-
-  /* forEach might not work for array comparision
-  if(a[0] || b[0]) {
-      v0 = a[0] ? a[0] : [];
-      v1 = b[0] ? b[0] : [];
-      v0.forEach(function(v,i) { 
-		     if( (v1[i] && v1[i] !== v) || (!v1[i] && v) ) { 
-			 throw 1;  
-		     } 
-		 });
-  }
-*/
+        // if only one vector has imaginary present, check that it only contains 
+        // zeros, otherwise the vectors are non equal
+        if(!v0 || !v1) {
+            v0 = v0 ? v0 : v1;
+            for(n = 0; n < N; n++) {
+                if(v0[n]) {
+                    return false;
+                }
+            }
+        } else {
+            if(v0.length !== v1.length) {
+                return false;
+            }
+        
+            N = v0.length;
+            for(n = 0; n < N; n++) {
+	        if(v0[n] !== v1[n]) {
+	            return false;
+	        }
+            }
+        }
+    }  
+    return true;
 }
 
 // add vector b to vector a, real or complex, returns vector a
 function add_v(a, b) {
-  var re, im;    
+  var v0, v1, im, n, N;    
 
-  // add real entries
-  if(b[0]) {
-      if(!a[0]){
-	  a[0] = b[0].slice(0);
-      } else {
-	  re = a[0];
-	  b[0].forEach(function(v,i) { re[i] = re[i] ? re[i] + v : v; });      
-      }
+  v0 = a[0];
+  v1 = b[0];
+
+  N = a[0].length;
+
+  // add re entries
+  for(n = 0; n < N; n++) {
+      v0[n] += v1[n];
   }
 
-  // add im entries
+  // add im entries from b if present
   if(b[1]) {
       if(!a[1]) {
-	  a[1] = b[1].slice(0);
+          a[1] = b[1].slice(0);
       } else {
-	  im = a[1];
-	  b[1].forEach(function(v,i) { im[i] = im[i] ? im[i] + v : v; });
+          v0 = a[1];
+          v1 = b[1];
+          
+          for(n = 0; n < N; n++) {
+              v0[n] += v1[n];
+          }
       }
   }
 
@@ -394,18 +435,23 @@ function dmul_v(a, b) {
 
 	if (a[1] && b[1]) {
 	    // both vectors has complex values
-	    a0 = a[0] ? a[0] : [];
-	    a1 = a[1] ? a[1] : [];
+	    a0 = a[0];
+	    a1 = a[1];
 	    
-	    b0 = b[0] ? b[0] : [];
-	    b1 = b[1] ? b[1] : [];
+	    b0 = b[0];
+	    b1 = b[1];
 
-	    N = Math.min(a0.length, b0.length);
+	    N = a0.length;
 
-	    a0.length = N;
-	    a1.length = N;
+            for(n = 0; n < N; n++) {
+                r1=b0[n];
+                r0=a0[n]; 
+                i0=a1[n]; 
+                i1=b1[n]; 
 
-	    a0.forEach(function(v,i) { if ((r1=b0[i])) { r0=v; i0=a1[i]; i1=b1[i]; a0[i] = r0*r1-i0*i1; a1[i]=i0*r1+r0*i1; } });
+                a0[n] = r0*r1 - i0*i1; 
+                a1[n] = i0*r1 + r0*i1;
+            }
 	} else {
 	    // setup so that a0,a1 represents the complex vector and b0 the real vector
 
@@ -863,10 +909,6 @@ function add_m(a,b) {
 		debug("iteration ", num++);
 		debug("index ", i);
 		debug("add: " + t + " to " + s);
-
-		if(num > 10) {
-		    return a;
-		}
 
 		if(b_re) {
 		    if(!a_re) {
