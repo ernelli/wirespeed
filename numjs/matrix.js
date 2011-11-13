@@ -420,10 +420,23 @@ function add_v(a, b) {
 
 // Add vector b multiplied by scalar s to a, return a
 function add_v_mul_s(a, b, s) {
-  var re, im;    
+/*
+    var v0, v1, re, im, n, N;    
     
+    v0 = a[0];
+    v1 = b[0];
+
+    N = a[0].length;
+
+  // add re entries
+    for(n = 0; n < N; n++) {
+        v0[n] += v1[n];
+    }
+  */  
   // non optimised implementation
-  return add_v(a, mul_v_s(clone_v(b), s));
+    return add_v(a, mul_v_s(clone_v(b), s));
+
+//    return a;
 }
 
 // dot mul vector, multiply each element of vector a with each element of vector b, real or complex, returns a
