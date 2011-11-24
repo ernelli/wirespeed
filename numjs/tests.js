@@ -187,9 +187,23 @@ var A = add_m(ones(N,N), mul_m_s(rand(N),-2) );
 print(A);
 print("-----------------");
 tic();
-print(inverse(A));
+var IA = inverse(A);
 toc();
-printMatlab(A);
+print(IA);
+
+var AIA = mul_m(A, IA);
+var IAA = mul_m(IA, A);
+
+print(AIA);
+print(IAA);
+
+var diff = sub_m(AIA, eye(N,N));
+diff = abs_m(diff);
+print("-------------------- diff");
+print(diff);
+var s = sum_m(diff);
+
+//printMatlab(A);
 
 if (false) {
 var A = new Matrix(3);
@@ -254,10 +268,11 @@ var P = res[1];
 print(G);
 print(P);
 
-var inv = inverse(G);
-print(inv);
-
+var IG = inverse(G);
+print(IG);
+var GIG = mul_m(GIG, IG);
 }
+
 
 } catch (e) {
     print("Testcase failed with [" + e.name + "] : ", e, " at file: " + e.fileName + ", line " + e.lineNumber);

@@ -420,23 +420,95 @@ function add_v(a, b) {
 
 // Add vector b multiplied by scalar s to a, return a
 function add_v_mul_s(a, b, s) {
-/*
-    var v0, v1, re, im, n, N;    
-    
-    v0 = a[0];
-    v1 = b[0];
+    var a0, a1, b0, b1, s0, s1, n, N;    
 
     N = a[0].length;
 
-  // add re entries
-    for(n = 0; n < N; n++) {
-        v0[n] += v1[n];
+    if(typeof s === "number") {
+	s0 = s;
+	s1 = 0;
+    } else {
+	s0 = s[0] ? s[0] : 0;
+	s1 = s[1] ? s[1] : 0;
     }
-  */  
-  // non optimised implementation
-    return add_v(a, mul_v_s(clone_v(b), s));
 
-//    return a;
+    // a & b are complex vectors and complex scalar
+    if(a[1] && b[1] && s1) {
+      a0 = a[0];
+      a1 = a[1];
+
+      b0 = b[0];
+      b1 = b[1];
+
+      for(n = 0; n < N; n++) {
+        a0[n] += b0[n]*s0 - b1[n]*s1;
+        a1[n] += b1[n]*s0 + b0[n]*s1;
+      }
+
+    // b is complex vector and complex scalar
+    } else if(b[1] && s1) {
+      a0 = a[0];
+      a[1] = a1 = [];
+
+      b0 = b[0];
+      b1 = b[1];
+
+      for(n = 0; n < N; n++) {
+        a0[n] += b0[n]*s0 - b1[n]*s1;
+        a1[n] = b1[n]*s0 + b0[n]*s1;
+      }        
+    // complex scalar, real b vector
+    } else if(s1) {
+      a0 = a[0];
+      b0 = b[0];
+
+      if(a[1]) {
+          for(n = 0; n < N; n++) {
+              a0[n] += b0[n]*s0;
+              a1[n] += b0[n]*s1;
+          }                  
+      } else {
+          a[1] = a1 = [];
+
+          for(n = 0; n < N; n++) {
+              a0[n] += b0[n]*s0;
+              a1[n] = b0[n]*s1;
+          }        
+      }
+    // real scalar
+    } else {
+        a0 = a[0];
+        b0 = b[0];
+        
+        for(n = 0; n < N; n++) {
+            a0[n] += b0[n]*s0;
+        }
+
+        if(b[1]) {
+            b1 = b[1];
+
+            if(a[1]) {
+                a1 = a[1];
+                
+                for(n = 0; n < N; n++) {
+                    a1[n] += b1[n]*s0;
+                }
+            } else {
+                a[1] = a1 = [];
+                for(n = 0; n < N; n++) {
+                    a1[n] = b1[n]*s0;
+                }
+            }
+        }
+    }
+
+    
+  // non optimised implementation
+
+
+//    return add_v(a, mul_v_s(clone_v(b), s));
+
+    return a;
 }
 
 // dot mul vector, multiply each element of vector a with each element of vector b, real or complex, returns a
@@ -681,9 +753,9 @@ function Matrix() {
 
 		    if(_re) {
 			re[index[i]] = _re;			
-		    } else {
-			delete re[index[i]];
-		    }
+		    }  else {
+                        delete re[index[i]];
+                    }
 
 		    if(_im) {
 			im[index[i]] = _im;			
@@ -953,6 +1025,73 @@ function add_m(a,b) {
     throw new("operator +: nonconformant arguments " + a.dim[0] + "x" + a.dim[1] + ", " + b.dim[0] + "x" + b.dim[1]);
 }
 
+// sub b from a, return a
+function sub_m(a,b) {
+    var i, j, J, n, s, t, a_re, b_re, a_im, b_im;
+
+    if(a.dim.length === b.dim.length) {
+
+	i = [];
+	
+	for(n = 0; n < a.dim.length; n++) {
+	    if( a.dim[n] !== b.dim[n] ) {
+		break;
+	    }
+	    i[n] = 0;
+	}
+	// dimensions agree
+
+	var num = 0;
+
+	// and the matrices has the same dimension, do the adding
+	if(n === a.dim.length) {
+
+	    // i is an index counter array used to index each row in the matrices
+
+	    i.pop(); // remove last index
+	    J = a.dim[a.dim.length-1]; // J is the number of elements in each row
+	    
+	    do {
+		s = a.getrow(i);
+		t = b.getrow(i);
+
+		a_re = s[0];
+		a_im = s[1];
+
+		b_re = t[0];
+		b_im = t[1];
+
+		debug("iteration ", num++);
+		debug("index ", i);
+		debug("add: " + t + " to " + s);
+
+		for(j = 0; j < J; j++) {
+		    a_re[j] -= b_re[j];
+		}		    			
+
+
+		if(b_im) {
+		    if(!a_im) {
+                        a_im = [];
+			for(j = 0; j < J; j++) {
+                            a_im[j] = -b_im[j];
+                        }
+		    } else {
+			for(j = 0; j < J; j++) {
+			    a_im[j] -= b_im[j];
+			}		    			
+		    }
+		}
+		
+		a.setrow(i, a_re, a_im);
+
+	    } while(a.nextelem(i));
+	    return a;
+	}
+    }
+
+    throw new("operator -: nonconformant arguments " + a.dim[0] + "x" + a.dim[1] + ", " + b.dim[0] + "x" + b.dim[1]);
+}
 
 // creates a 1xN sized matrix, a vector.
 function Vector() {
@@ -1048,4 +1187,47 @@ function rand() {
     } while(a.nextelem(n));
 
     return a;
+}
+
+function abs_m(a) {
+    var n, i, I, b, e, re, im;
+
+    n = a.firstrow();
+
+     // inner loop length
+    I = a.dim[a.dim.length-1];
+
+    do {
+	e = a.getrow(n);
+
+        re = e[0];
+        im = e[1];
+
+        if(re && im) {
+	    for(i = 0; i < I; i++) {
+	        re[i] = Math.sqrt(re[i]*re[i]+im[i]*im[i]);
+	    }
+        } else if(re){
+            for(i = 0; i < I; i++) {
+                if(re[i] < 0) {
+                    re[i] = -re[i];
+                }
+            }
+        }
+	a.setrow(n, e[0], false);
+
+    } while(a.nextelem(n));
+
+    return a;        
+}
+
+function sum_m(a) {
+    var n, i, I, s = {}, e, re;
+
+    print(  );
+
+    Matrix.apply(s, [1].concat(a.dim.slice(0, a.dim.length-1)) );
+    print(s);
+
+    return s;
 }
