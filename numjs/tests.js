@@ -1,4 +1,5 @@
 load('seedrandom.js');
+enableDebug = true;
 load('matrix.js');
 load('gauss.js');
 
@@ -176,6 +177,15 @@ var A = ones(3,3);
 print(mul_m_s(A,2));
 print("A.im: " + typeof A.im);
 print(mul_m_s(A,[1,2]));
+
+print("testing sum_m");
+
+A = ones(3,3,3);
+var S1 = sum_m(A);
+
+var B = ones(2,2,2,2);
+var S2 = sum_m(B);
+
 
 print("testing gauss elimination");
 

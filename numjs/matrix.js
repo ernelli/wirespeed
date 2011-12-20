@@ -753,27 +753,27 @@ function Matrix() {
 
 		    if(_re) {
 			re[index[i]] = _re;			
-		    }  else {
-                        delete re[index[i]];
-                    }
+		    }
 
 		    if(_im) {
 			im[index[i]] = _im;			
-		    } else {
-			delete im[index[i]];
 		    }
+
 		} else {
-		    // populate empty matrix indices, if row value exists
-		    if(_re && !re[index[i]]) {
-			re[index[i]] = [];
+		    // populate empty matrix indices if row value is to be set
+		    if(_re) {
+                        if(!re[index[i]]) {
+			    re[index[i]] = [];
+                        }
+		        re = re[index[i]];
 		    } 
 		    
-		    if(_im && !im[index[i]]) {
-			im[index[i]] = [];
+		    if(_im) {
+                        if(!im[index[i]]) {
+			    im[index[i]] = [];
+                        }
+		        im = im[index[i]];
 		    } 
-		    
-		    re = re[index[i]];
-		    im = im[index[i]];
 		}
 	    }
 	}	
@@ -1131,24 +1131,18 @@ function ones() {
 
      // inner loop length
     I = a.dim[a.dim.length-1];
+    e = new Array(I);
+    for(i = 0; i < I; i++) {
+        e[i] = 1;
+    }
 
     debug("inner loop length: " + I);
 
     do {
 	debug("getrow from a, index: " + n + ", a.dim: " + a.dim);
-	e = a.getrow(n);
+//	e = a.getrow(n);
 	
-	if(e[0]) {
-	    re = e[0];
-	} else {
-	    re = [];
-	}
-
-	for(i = 0; i < I; i++) {
-	    re[i] = 1;
-	}
-	
-	a.setrow(n, re, false);
+	a.setrow(n, e.slice(0), false);
 
     } while(a.nextelem(n));
 
@@ -1221,6 +1215,22 @@ function abs_m(a) {
     return a;        
 }
 
+// 1x3
+// 1 2 3 -> sum row 6
+
+// 3x3
+// 1 2 3 -> sum rows
+// 4 5 6       |
+// 6 7 9
+//          11 14 18
+
+// 2x2x4
+// 1 2  5 6 = 4 6  11 13
+// 3 4  6 7
+// 
+// 2 3  7 8   6 6   8 10
+// 4 3  1 2
+
 function sum_m(a) {
     var n, i, I, s = {}, e, re;
 
@@ -1228,6 +1238,12 @@ function sum_m(a) {
 
     Matrix.apply(s, [1].concat(a.dim.slice(0, a.dim.length-1)) );
     print(s);
+
+    n = a.firstrow();
+    do {
+        e = a.getrow(n);
+        print("add row at: " + n + ", values: " + e);
+    } while(a.nextelem(n));
 
     return s;
 }
