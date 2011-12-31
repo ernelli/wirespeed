@@ -182,10 +182,18 @@ print("testing sum_m");
 
 A = ones(3,3,3);
 var S1 = sum_m(A);
+print("sum:\n" + S1);
 
 var B = ones(2,2,2,2);
 var S2 = sum_m(B);
+print("sum:\n" + S2);
 
+var C = ones(3,3);
+print("summing:\n" + C);
+var S3 = sum_m(C);
+print("sum:\n" + S3);
+
+quit(0);
 
 print("testing gauss elimination");
 

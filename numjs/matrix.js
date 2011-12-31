@@ -120,6 +120,46 @@ function formatScalar(s) {
     }
 }
 
+function formatVector(v) {
+    var s = "", im, re, i, I, d,  sp = "          ";
+    re = v[0];
+    im = v[1];
+
+    I = re.length;
+
+    if(!im) {
+	    // only real elements
+	for(i = 0; i < I; i++) {
+            
+            d = re[i];
+            
+	    if(d < 1 && d > -1) {
+		d = d.toFixed(5);
+	    } else {
+		d = d.toPrecision(6);
+	    }
+            
+	    s += sp.substring(d.length) + d;
+	}
+
+    } else {
+	    // complex vector
+
+	for(i = 0; i < I; i++) {
+            
+	    s+= re[i];
+	    
+	    d=im[i];
+	    if(d < 0) {
+		s+= " - " + (-d) + "i\t";
+	    } else {
+		s+= " + " + d + "i\t";
+	    }
+	}
+    }
+    return s;    
+}
+
 // test
 
 function equal_s(a,b) {
@@ -629,6 +669,8 @@ function Matrix() {
 	// create a NxN matrix with zeros
 	if(arguments.length === 1 && arguments[0] && isInteger(arguments[0])) {
 	    this.dim[0] = this.dim[1] = arguments[0];
+        } else if(arguments.length === 1 && arguments[0] && typeof arguments[0] == "object" && arguments[0].length) {
+            this.dim = arguments[0].slice(0);
         } else {
 	    this.dim = Array.prototype.slice.call(arguments);
 	}
@@ -638,6 +680,10 @@ function Matrix() {
 	var i, j, s, d, r, c, e, re, im, sp = "          ";
 	
 	s = "";
+
+        if(this.dim.length > 2) {
+            return "dimension > 2 not supported yet: " + this.dim;
+        }
 	
 	r = 1*this.dim[0];
 	c = 1*this.dim[1];
@@ -722,14 +768,14 @@ function Matrix() {
 	    im = this.im;
 	    for(i = 0; i < index.length; i++) {
 		if (index[i] >= this.dim[i]) {
-		    throw new("error: getrow : Index exceeds matrix dimension. index[" + i + "] (" + index[i] + " >= " + this.dim[i]);		    
+		    throw "error: getrow : Index exceeds matrix dimension. index[" + i + "] (" + index[i] + " >= " + this.dim[i];		    
 		}
 		re = re ? re[index[i]] : false;
 		im = im ? im[index[i]] : false;
 	    }
 	    return [re && re.length ? re : undefined, im && im.length ? im : undefined];
 	}	
-	throw new("error: getrow : Index dimension not equal to matrix dimension - 1");
+	throw "error: getrow : Index dimension not equal to matrix dimension - 1";
     };
 
     //adresses one full row in matrix, sets the row to the array of [re, im],
@@ -1121,6 +1167,34 @@ function eye() {
     return a;
 }
 
+function zeros() {
+     var n, i, I, a = {}, e, re;
+    Matrix.apply(a, arguments);
+
+    debug("got a matrix: " + size(a));
+ 
+    n = a.firstrow();
+
+     // inner loop length
+    I = a.dim[a.dim.length-1];
+    e = new Array(I);
+    for(i = 0; i < I; i++) {
+        e[i] = 0;
+    }
+
+    debug("inner loop length: " + I);
+
+    do {
+	debug("getrow from a, index: " + n + ", a.dim: " + a.dim);
+//	e = a.getrow(n);
+	
+	a.setrow(n, e.slice(0), false);
+
+    } while(a.nextelem(n));
+
+    return a;
+}
+
 function ones() {
     var n, i, I, a = {}, e, re;
     Matrix.apply(a, arguments);
@@ -1232,18 +1306,34 @@ function abs_m(a) {
 // 4 3  1 2
 
 function sum_m(a) {
-    var n, i, I, s = {}, e, re;
+    var d, m,n, i, I, s = {}, e, f;
 
-    print(  );
 
-    Matrix.apply(s, [1].concat(a.dim.slice(0, a.dim.length-1)) );
+    d = a.dim.slice(0);
+
+    I = d.pop();
+    print("inner loop length: " + I);
+    
+
+    d = [1].concat(d);
+    s = zeros(d);
+
+    print("sum size; " + size(s));
     print(s);
-
+    
+    m = s.firstrow();
     n = a.firstrow();
     do {
-        e = a.getrow(n);
-        print("add row at: " + n + ", values: " + e);
-    } while(a.nextelem(n));
+        // sum all elements into e
+        e = s.getrow(m);
+        for(i = 0; i < I; i ++) {
+            f = a.getrow(n);
+            print("add row to: [" + e + "], index " + n + ", values: " + f);
+            add_v(e, f);
+            a.nextelem(n);
+        }
+        s.setrow(m);
+    } while(s.nextelem(m));
 
     return s;
 }
