@@ -657,6 +657,19 @@ function mul_v(a, b) {
     }
 }
 
+// Matrix of dimension N order in memory
+// elements [2,..,N,r][c], where 2..n is matrix index when dim > 2
+//
+// dim hold matrix dimension in same order
+//
+// adressing a row
+// 
+// address (r,c,2..N) -> [2,..,N,r][c]
+//
+// 
+//
+
+
 
 function Matrix() {
     var n, i;
@@ -664,6 +677,10 @@ function Matrix() {
     this.re = [];
     this.im = [];
     this.dim = [];
+
+    // dim[0] = num rows
+    // dim[1] = num cols
+    // dim[2..n] = matrix index
 
     if(arguments.length > 0) {
 	// create a NxN matrix with zeros
@@ -674,9 +691,35 @@ function Matrix() {
         } else {
 	    this.dim = Array.prototype.slice.call(arguments);
 	}
+
+        //if(this.dim.length > 2) {
+        //    this.dim = this.dim.slice(2).concat(this.dim.slice(0,2));
+        //}
     }
 
     this.toString = function() {
+        var i, j, J, e, s = "";
+        
+        j = 0;
+        J = this.dim[0];
+        i = this.firstrow();
+        do {
+            if(!j++) {
+                s += i + "\n";                
+            }
+            if(j >= J) {
+                j = 0;
+            }
+
+            e = this.getrow(i);
+            s += formatVector(e) + "\n";
+
+
+        } while(this.nextelem(i));
+        return s;
+    };
+
+    this.toStringX = function() {
 	var i, j, s, d, r, c, e, re, im, sp = "          ";
 	
 	s = "";
@@ -873,6 +916,7 @@ function Matrix() {
 		if( (re = this.re[arguments[0]-1]) ) {
 		    re = re[arguments[1]-1];
 		}
+
 		if( (im = this.im[arguments[0]-1]) ) {
 		    im = im[arguments[1]-1];
 		}
@@ -1151,7 +1195,10 @@ function Vector() {
 
 function eye() {
     var a = {}, m, M, re;
-    Matrix.apply(a, arguments);
+
+    a = zeros.apply(this, arguments);
+
+//    Matrix.apply(a, arguments);
     if(a.dim > 2) {
 	throw new ("error: Invalid call to eye.  Correct usage is eye(M), eye(M,N)");
     }
@@ -1159,9 +1206,7 @@ function eye() {
     M = Math.min(a.dim[0], a.dim[1]);
     
     for(m = 0; m < M; m++) {
-	re = [];
-	re[m] = 1;
-	a.re[m] = re;
+	a.re[m][m] = 1;
     }
 
     return a;
@@ -1171,8 +1216,6 @@ function zeros() {
      var n, i, I, a = {}, e, re;
     Matrix.apply(a, arguments);
 
-    debug("got a matrix: " + size(a));
- 
     n = a.firstrow();
 
      // inner loop length
@@ -1182,14 +1225,9 @@ function zeros() {
         e[i] = 0;
     }
 
-    debug("inner loop length: " + I);
-
     do {
 	debug("getrow from a, index: " + n + ", a.dim: " + a.dim);
-//	e = a.getrow(n);
-	
 	a.setrow(n, e.slice(0), false);
-
     } while(a.nextelem(n));
 
     return a;
