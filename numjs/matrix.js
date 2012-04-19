@@ -681,7 +681,6 @@ function mul_v(a, b) {
 function Matrix() {
     var n, i;
 
-    this.re = [];
     //this.im = [];
     this.dim = [];
 
@@ -708,6 +707,14 @@ function Matrix() {
         //if(this.dim.length > 2) {
         //    this.dim = this.dim.slice(2).concat(this.dim.slice(0,2));
         //}
+
+        n = 1;
+        for(i = 0; i < this.dim.length; i++) {
+            n = n * this.dim[i];
+        }
+        this.re = new Array(n);
+    } else {
+        this.re = [];        
     }
 
     this.toString = function() {
@@ -1312,85 +1319,41 @@ function eye() {
 }
 
 function zeros() {
-     var n, i, I, a = {}, e, re;
+    var n, N, a = {}, re;
     Matrix.apply(a, arguments);
 
-    n = a.firstrow();
+    re = a.re;
+    N = re.length;
 
-     // inner loop length
-    I = a.dim[a.dim.length-1];
-    e = new Array(I);
-    for(i = 0; i < I; i++) {
-        e[i] = 0;
+    for(n = 0; n < N; n++) {
+        re[n] = 0;
     }
-
-    do {
-	//debug("getrow from a, index: " + n + ", a.dim: " + a.dim);
-	a.setrow(n, e.slice(0), false);
-    } while(a.nextrow(n));
-
     return a;
 }
 
 function ones() {
-    var n, i, I, a = {}, e, re;
+    var n, N, a = {}, re;
     Matrix.apply(a, arguments);
 
-    debug("got a matrix: " + size(a));
- 
-    n = a.firstrow();
+    re = a.re;
+    N = re.length;
 
-     // inner loop length
-    I = a.dim[a.dim.length-1];
-    e = new Array(I);
-    for(i = 0; i < I; i++) {
-        e[i] = 1;
+    for(n = 0; n < N; n++) {
+        re[n] = 1;
     }
-
-    debug("inner loop length: " + I);
-
-    do {
-	//debug("getrow from a, index: " + n + ", a.dim: " + a.dim);
-//	e = a.getrow(n);
-	
-	a.setrow(n, e.slice(0), false);
-
-    } while(a.nextrow(n));
-
     return a;
 }
 
 function rand() {
-    var n, i, I, a = {}, e, re;
+    var n, N, a = {}, re;
     Matrix.apply(a, arguments);
 
-    debug("got a matrix: " + size(a));
- 
-    n = a.firstrow();
+    re = a.re;
+    N = re.length;
 
-     // inner loop length
-    I = a.dim[a.dim.length-1];
-
-    debug("inner loop length: " + I);
-
-    do {
-	//debug("getrow from a, index: " + n + ", a.dim: " + a.dim);
-	e = a.getrow(n);
-	
-	if(e[0]) {
-	    re = e[0];
-	} else {
-	    re = [];
-	}
-
-	for(i = 0; i < I; i++) {
-	    re[i] = Math.random();
-	}
-	
-	a.setrow(n, re, false);
-
-    } while(a.nextrow(n));
-
+    for(n = 0; n < N; n++) {
+        re[n] = Math.random();
+    }
     return a;
 }
 
