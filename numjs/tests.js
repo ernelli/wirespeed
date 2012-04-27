@@ -172,6 +172,41 @@ assert(equal_v([[-1,-1,-1,-1],[3,3,3,3]],add_v_mul_s([[-1,-1,-1,-1],[1,1,1,1]],[
 print("Vector primitives passed");
 
 print("testing matrix primitives");
+var M = new Matrix(3,3);
+M.re = [1,2,3,4,5,6,7,8,9];
+
+var i;
+for(i = 0; i < 9; i++) {
+    assert( M.get(1 + (i / 3)|0, 1 + i % 3 ) === (i+1) ) ;
+}
+print("matrix [3x3] get ok!");
+
+M = new Matrix(4,2);
+M.re = [1,2,3,4,5,6,7,8];
+print(M);
+
+for(i = 0; i < 8; i++) {
+    assert( M.get(1 + (i / 2)|0, 1 + i % 2 ) === (i+1) ) ;
+}
+print("matrix [4x2] get ok!");
+quit();
+
+var M1 = mul_m_s(M,1.5);
+var str = M1.toString();
+var ref = ("   1.50000   3.00000   4.50000\n"+
+"   6.00000   7.50000   9.00000\n"+
+"   10.5000   12.0000   13.5000\n");
+print("compare str:\n" + str);
+print("compare ref:\n" + ref);
+assert(str === ref);
+
+M = ones(4,3);
+print("dim: " + M.dim);
+print("re: " + M.re);
+print(M);
+
+//print("print matrix");
+//print(M1);
 
 var A = ones(3,3);
 print(mul_m_s(A,2));

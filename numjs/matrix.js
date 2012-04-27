@@ -87,7 +87,11 @@ function whos() {
 // scalar functions
 
 function size(m) {
-    var s = m.dim.slice(0);
+    var t, s = m.dim.slice(0)
+    t = s[0];
+    s[0] = s[1];
+    s[1] = t;
+
     s.toString = function() {
       return "" + s.join("x");
     };
@@ -658,11 +662,14 @@ function mul_v(a, b) {
 }
 
 // Matrix of dimension N order in memory
+//
+// array of elements stored row by row.
+// 
 // elements [2,..,N,r][c], where 2..n is matrix index when dim > 2
 //
-// dim hold matrix dimension in same order
+// dim hold matrix dimension in order
 //
-// adressing a row
+// [rows, cols, 2, ..., N]
 // 
 // address (r,c,2..N) -> [2,..,N,r][c]
 //
@@ -674,12 +681,11 @@ function mul_v(a, b) {
 function Matrix() {
     var n, i;
 
-    this.re = [];
-    this.im = [];
+    //this.im = [];
     this.dim = [];
 
-    // dim[0] = num rows
-    // dim[1] = num cols
+    // dim[0] = num cols
+    // dim[1] = num rows
     // dim[2..n] = matrix index
 
     if(arguments.length > 0) {
@@ -692,30 +698,47 @@ function Matrix() {
 	    this.dim = Array.prototype.slice.call(arguments);
 	}
 
+        // swap row, col to make matrix dimension matlab compliant
+        n = this.dim[0];
+        this.dim[0] = this.dim[1];
+        this.dim[1] = n;
+        
+
         //if(this.dim.length > 2) {
         //    this.dim = this.dim.slice(2).concat(this.dim.slice(0,2));
         //}
+
+        n = 1;
+        for(i = 0; i < this.dim.length; i++) {
+            n = n * this.dim[i];
+        }
+        this.re = new Array(n);
+    } else {
+        this.re = [];        
     }
 
     this.toString = function() {
-        var i, j, J, e, s = "";
+        var i, j, J, e, m, s = "";
         
-        j = 0;
-        J = this.dim[0];
+        j = 1;
+        J = this.dim[1];
         i = this.firstrow();
+
+        m = this.dim.length > 2;
+
+        print("first row: " + i.index);
+
         do {
-            if(!j++) {
-                s += i + "\n";                
-            }
-            if(j >= J) {
+            // print matrix index
+            if(m && (++j === J)) {
+                s += "index: " + i.index + "/" + this.dim + "\n";                
                 j = 0;
             }
-
+            
             e = this.getrow(i);
+            print("got row: " + e + ", size is: " + e[0].length);
             s += formatVector(e) + "\n";
-
-
-        } while(this.nextelem(i));
+        } while(this.nextrow(i));
         return s;
     };
 
@@ -801,12 +824,43 @@ function Matrix() {
 	return s;
     };
 
+    // elements are adressed [c,r,...,N]
+
+    this.getindex = function(index) {
+        var i, m, o;
+
+        m = 1;
+        o = index[0];
+        
+        for(i = 1; i < index.length; i++) {
+            m *= this.dim[i-1];
+            o += index[i] * m;
+        }
+
+        return o;
+    };
+
     //adresses one full row in matrix, always returns an array of [re, im]
-    //row,col index is zero based. Lack of values is indicated by empty, not empty array
+    //row,col index is zero based. Lack of values is indicated by undefined, not empty array
     this.getrow = function(index) {
 	var i, re, im;	
 
-	if(index.length === (this.dim.length-1) ) {
+        if(index.size) {
+            i = index.index;  
+        } else {
+	    if(index.length === (this.dim.length-1) ) {
+                i = this.getindex(index);
+            } else {
+                throw "error: getrow : Invalid index";
+            }
+        }
+        re = this.re.slice(i, i+this.dim[0]);
+
+        if(this.im) {
+            im = this.im.slice(i, i+this.dim[0]);
+        }
+        return [re, im];
+            /*
 	    re = this.re;
 	    im = this.im;
 	    for(i = 0; i < index.length; i++) {
@@ -817,15 +871,57 @@ function Matrix() {
 		im = im ? im[index[i]] : false;
 	    }
 	    return [re && re.length ? re : undefined, im && im.length ? im : undefined];
-	}	
-	throw "error: getrow : Index dimension not equal to matrix dimension - 1";
+             */
     };
 
     //adresses one full row in matrix, sets the row to the array of [re, im],
     //row,col index is zero based
     this.setrow = function(index, _re, _im) {
-	var i, re, im;	
+	var i, m, n, N, re, im;	
 
+        if(index.size) {
+            i = index.index;  
+        } else {
+	    if(index.length === (this.dim.length-1) ) {
+                i = this.getindex(index);
+            } else {
+                throw "error: setrow : Invalid index";
+            }
+        }
+
+        N = i + this.dim[0];
+
+	re = this.re;
+	im = this.im;
+
+        if(_re) {
+            for(n = i, m = 0; n < N; n++,m++) {
+                re[n] = _re[m];
+            }
+        }
+
+        if(_im) {
+            if(!im) {
+                im = [];
+                for(n = 0; n < i; n++) {
+                    im[n] = 0;
+                }
+            }
+            for(n = i, m = 0; n < N; n++,m++) {
+                im[n] = _im[m];
+            }
+
+            if(!this.im) {
+                N = re.length;
+                while(n < N) {
+                    im[n++] = 0;
+                }
+                this.im = im;
+            }
+        }
+
+
+        /*
 	if(index.length === (this.dim.length-1) ) {
 	    re = this.re;
 	    im = this.im;
@@ -865,29 +961,36 @@ function Matrix() {
 		    } 
 		}
 	    }
-	}	
+	}
+	*/
     };
 
     this.firstrow = function() {
-	var i = this.dim.slice(0);
-	this.nextelem(i);
-	i.pop();
-	return i;
+        var i, I, m = 1;
+        I = this.dim.length;
+        for(i = 0; i < I; i++) {
+            m *= this.dim[i];
+        }
+	return { index: 0, size: m };
+    };
+
+    this.nextrow = function (i) {
+        i.index += this.dim[0];
+        if(i.index >= i.size) {
+            i.index -= i.size;
+            return false;
+        }
+        return true;
     };
 
     this.nextelem = function (i) {
-	n = i.length-1;
+        i.index++;
 
-	while(n >= 0) {
-	    i[n]++;
-	    if(i[n] < this.dim[n]) {
-		break;
-	    } else {
-		i[n] = 0;
-		n--;
-	    }
-	}
-	return n >= 0;
+        if(i.index >= i.size) {
+            i = 0;
+            return false;
+        }
+        return true;
     };
 
     this.clone = function() {
@@ -897,7 +1000,7 @@ function Matrix() {
 	do {
 	    r = this.getrow(i).slice(0);
 	    m.setrow(i, r[0] ? r[0].slice(0) : false, r[1] ? r[1].slice(0) : false);
-	} while(m.nextelem(i));
+	} while(m.nextrow(i));
 	return m;
     };
 
@@ -905,37 +1008,40 @@ function Matrix() {
     // returns a sub matrix from matrix, index supports
     //row,col index is 1 based
     this.get = function() {
-	var i, re, im;
+	var o, m, i, re, im;
             
 	if(arguments.length <= this.dim.length) {
 	    debug("get from: " + arguments[0] + "," + arguments[1]);
 	    
-	    // unnecesary premature optimisation
-	    if(arguments.length === 2) {
-		debug("get from: " + this.re);
-		if( (re = this.re[arguments[0]-1]) ) {
-		    re = re[arguments[1]-1];
-		}
+            // adress scalar element in matrix
+	    if(arguments.length === this.dim.length) {
+                o = (arguments[0]-1)*this.dim[0] + arguments[1] - 1;
 
-		if( (im = this.im[arguments[0]-1]) ) {
-		    im = im[arguments[1]-1];
-		}
-	    } else {
-		re = this.re;
-		im = this.im;
-		for(i = 0; i < arguments.length; i++) {
-		    re = re ? re[arguments[i]-1] : 0;
-		    im = im ? im[arguments[i]-1] : 0;
-		}
-	    }
-	    
+                print("get from offset: " + o + ", args: " + arguments + ", dim: " + this.dim);
+
+                m = 1;
+                    
+                for(i = 2; i < arguments.length; i++) {
+                    m *= this.dim[i-1];
+                    o += arguments[i] * m;
+                }
+
+                if(this.im) {
+                    im = this.im[o];
+                }
+                re = this.re[o];
+
+            } else {
+	        throw new("error: get submatrix not supported yet.");                
+            }
+
 	    if(im) {
 		return [re, im];
 	    } else {
 		return re;
 	    }
 	}
-	throw new("error: * : Index exceeds matrix dimension.");
+	throw new("error: Index exceeds matrix dimension.");
     };
 
     this.set = function(index, re, im) {
@@ -971,7 +1077,7 @@ function mul_m_s(a,b) {
 	e = a.getrow(n);
 	mul_v_s(e,b);
 	a.setrow(n,e[0],e[1]);
-    }  while(a.nextelem(n));
+    }  while(a.nextrow(n));
 
     return a;
 }
@@ -1107,7 +1213,7 @@ function add_m(a,b) {
 		
 		a.setrow(i, a_re, a_im);
 
-	    } while(a.nextelem(i));
+	    } while(a.nextrow(i));
 	    return a;
 	}
     }
@@ -1175,7 +1281,7 @@ function sub_m(a,b) {
 		
 		a.setrow(i, a_re, a_im);
 
-	    } while(a.nextelem(i));
+	    } while(a.nextrow(i));
 	    return a;
 	}
     }
@@ -1213,85 +1319,41 @@ function eye() {
 }
 
 function zeros() {
-     var n, i, I, a = {}, e, re;
+    var n, N, a = {}, re;
     Matrix.apply(a, arguments);
 
-    n = a.firstrow();
+    re = a.re;
+    N = re.length;
 
-     // inner loop length
-    I = a.dim[a.dim.length-1];
-    e = new Array(I);
-    for(i = 0; i < I; i++) {
-        e[i] = 0;
+    for(n = 0; n < N; n++) {
+        re[n] = 0;
     }
-
-    do {
-	debug("getrow from a, index: " + n + ", a.dim: " + a.dim);
-	a.setrow(n, e.slice(0), false);
-    } while(a.nextelem(n));
-
     return a;
 }
 
 function ones() {
-    var n, i, I, a = {}, e, re;
+    var n, N, a = {}, re;
     Matrix.apply(a, arguments);
 
-    debug("got a matrix: " + size(a));
- 
-    n = a.firstrow();
+    re = a.re;
+    N = re.length;
 
-     // inner loop length
-    I = a.dim[a.dim.length-1];
-    e = new Array(I);
-    for(i = 0; i < I; i++) {
-        e[i] = 1;
+    for(n = 0; n < N; n++) {
+        re[n] = 1;
     }
-
-    debug("inner loop length: " + I);
-
-    do {
-	debug("getrow from a, index: " + n + ", a.dim: " + a.dim);
-//	e = a.getrow(n);
-	
-	a.setrow(n, e.slice(0), false);
-
-    } while(a.nextelem(n));
-
     return a;
 }
 
 function rand() {
-    var n, i, I, a = {}, e, re;
+    var n, N, a = {}, re;
     Matrix.apply(a, arguments);
 
-    debug("got a matrix: " + size(a));
- 
-    n = a.firstrow();
+    re = a.re;
+    N = re.length;
 
-     // inner loop length
-    I = a.dim[a.dim.length-1];
-
-    debug("inner loop length: " + I);
-
-    do {
-	debug("getrow from a, index: " + n + ", a.dim: " + a.dim);
-	e = a.getrow(n);
-	
-	if(e[0]) {
-	    re = e[0];
-	} else {
-	    re = [];
-	}
-
-	for(i = 0; i < I; i++) {
-	    re[i] = Math.random();
-	}
-	
-	a.setrow(n, re, false);
-
-    } while(a.nextelem(n));
-
+    for(n = 0; n < N; n++) {
+        re[n] = Math.random();
+    }
     return a;
 }
 
@@ -1322,7 +1384,7 @@ function abs_m(a) {
         }
 	a.setrow(n, e[0], false);
 
-    } while(a.nextelem(n));
+    } while(a.nextrow(n));
 
     return a;        
 }
@@ -1357,6 +1419,7 @@ function sum_m(a) {
     s = zeros(d);
 
     print("sum size; " + size(s));
+    print("print matrix, re: " + s.re);
     print(s);
     
     m = s.firstrow();
@@ -1366,12 +1429,12 @@ function sum_m(a) {
         e = s.getrow(m);
         for(i = 0; i < I; i ++) {
             f = a.getrow(n);
-            print("add row to: [" + e + "], index " + n + ", values: " + f);
+            //print("add row to: [" + e + "], index " + n + ", values: " + f);
             add_v(e, f);
-            a.nextelem(n);
+            a.nextrow(n);
         }
         s.setrow(m);
-    } while(s.nextelem(m));
+    } while(s.nextrow(m));
 
     return s;
 }
