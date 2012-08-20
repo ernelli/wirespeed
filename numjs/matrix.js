@@ -87,7 +87,7 @@ function whos() {
 // scalar functions
 
 function size(m) {
-    var t, s = m.dim.slice(0)
+    var t, s = m.dim.slice(0);
     t = s[0];
     s[0] = s[1];
     s[1] = t;
@@ -206,8 +206,8 @@ function add_s(a,b) {
 // multiply two scalars, real or complex
 function mul_s(a, b) {
     var a0, a1, b0, b1;
-    debug("mul_s: " + a + " with " + b);
-    debug("mul_s: " + formatScalar(a) + " * " + formatScalar(b) );
+    //debug("mul_s: " + a + " with " + b);
+    //debug("mul_s: " + formatScalar(a) + " * " + formatScalar(b) );
     if(typeof a === "number") {
 	if(typeof b === "number") {
 	    return a*b;
@@ -726,7 +726,7 @@ function Matrix() {
 
         m = this.dim.length > 2;
 
-        print("first row: " + i.index);
+        //print("first row: " + i.index);
 
         do {
             // print matrix index
@@ -736,7 +736,7 @@ function Matrix() {
             }
             
             e = this.getrow(i);
-            print("got row: " + e + ", size is: " + e[0].length);
+            //print("got row: " + e + ", size is: " + e[0].length);
             s += formatVector(e) + "\n";
         } while(this.nextrow(i));
         return s;
@@ -1011,19 +1011,21 @@ function Matrix() {
 	var o, m, i, re, im;
             
 	if(arguments.length <= this.dim.length) {
-	    debug("get from: " + arguments[0] + "," + arguments[1]);
+	    //debug("get from: " + Array.prototype.slice.call(arguments));
 	    
             // adress scalar element in matrix
 	    if(arguments.length === this.dim.length) {
                 o = (arguments[0]-1)*this.dim[0] + arguments[1] - 1;
 
-                print("get from offset: " + o + ", args: " + arguments + ", dim: " + this.dim);
+                //print("get from offset: " + o + ", args: " + arguments + ", dim: " + this.dim);
 
-                m = 1;
+                m = this.dim[0];
                     
                 for(i = 2; i < arguments.length; i++) {
                     m *= this.dim[i-1];
-                    o += arguments[i] * m;
+                    o += (arguments[i]-1) * m;
+
+                    //print("iterate i=" + i + ", arg: " + arguments[i] + ", offset: " + o + ", multiplier: " + m);
                 }
 
                 if(this.im) {
@@ -1412,15 +1414,15 @@ function sum_m(a) {
     d = a.dim.slice(0);
 
     I = d.pop();
-    print("inner loop length: " + I);
+    //print("inner loop length: " + I);
     
 
     d = [1].concat(d);
     s = zeros(d);
 
-    print("sum size; " + size(s));
-    print("print matrix, re: " + s.re);
-    print(s);
+    //print("sum size; " + size(s));
+    //print("print matrix, re: " + s.re);
+    //print(s);
     
     m = s.firstrow();
     n = a.firstrow();
@@ -1433,7 +1435,7 @@ function sum_m(a) {
             add_v(e, f);
             a.nextrow(n);
         }
-        s.setrow(m);
+        s.setrow(m, e[0]);
     } while(s.nextrow(m));
 
     return s;

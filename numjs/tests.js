@@ -154,7 +154,7 @@ assert(equal_v(dmul_v([[1,0,1,0]], [[0,1,0,1]]), [[0,0,0,0]]));
 assert(equal_v(dmul_v([[1,1,1,1]], [[1,1]]), [[1,1]]));
 assert(equal_v(dmul_v([[1,1]], [[1,1,1,1]]), [[1,1]]));
 
-// check sparse complex vectors
+// check complex vectors
 assert(equal_v(dmul_v([ [1,1,1,1],[1,1,1,1] ], [ [1,1,1,1], [1,1,1,1] ]), mul_v_s( [ [1,1,1,1], [1,1,1,1] ], [1,1]) ));
 assert(equal_v(dmul_v([ [1,0,1,1],[1,0,1,1] ], [ [0,1,1,1], [0,1,1,1] ]), dmul_v([ [1,0,1,1],[1,0,1,1] ], [ [0,1,1,1], [0,1,1,1] ]) ));
 assert(equal_v(dmul_v([ [1,1],[1,1] ], [ [0,1,1,1], [0,1,1,1] ]), dmul_v([ [1,1],[1,1] ], [ [0,1], [0,1] ]) ));
@@ -175,6 +175,8 @@ print("testing matrix primitives");
 var M = new Matrix(3,3);
 M.re = [1,2,3,4,5,6,7,8,9];
 
+//print(M);
+
 var i;
 for(i = 0; i < 9; i++) {
     assert( M.get(1 + (i / 3)|0, 1 + i % 3 ) === (i+1) ) ;
@@ -183,50 +185,79 @@ print("matrix [3x3] get ok!");
 
 M = new Matrix(4,2);
 M.re = [1,2,3,4,5,6,7,8];
-print(M);
+//print(M);
 
 for(i = 0; i < 8; i++) {
     assert( M.get(1 + (i / 2)|0, 1 + i % 2 ) === (i+1) ) ;
 }
 print("matrix [4x2] get ok!");
-quit();
+
+//  1  2  3   1 1 1 = 1
+//  4  5  6   2 1 1 = 4
+
+//  7  8  9   1 1 2  = 7
+// 10 11 12
+
+// 13 14 15   1 1 3  = 13
+// 16 17 18
+
+// 19 20 21   1 1 4 = 19
+// 22 23 24
+
+M = new Matrix(2,3,4); // size = 6
+M.re = [];
+for(i = 0; i < 24; i++) {
+    M.re[i] = i+1;
+}
+//print(M);
+
+for(i = 0; i < 24; i++) {
+    assert( M.get(1 + ((i % 6) / 3)|0, 1 + i % 3, 1 + (i / 6)|0 ) === (i+1) ) ;
+}
+print("matrix [2x3x4] get ok!");
+
+M = new Matrix(3,3);
+M.re = [1,2,3,4,5,6,7,8,9];
 
 var M1 = mul_m_s(M,1.5);
 var str = M1.toString();
 var ref = ("   1.50000   3.00000   4.50000\n"+
 "   6.00000   7.50000   9.00000\n"+
 "   10.5000   12.0000   13.5000\n");
-print("compare str:\n" + str);
-print("compare ref:\n" + ref);
+//print("compare str:\n" + str);
+//print("compare ref:\n" + ref);
 assert(str === ref);
+print("Matrix toString and mul scalar ok");
 
-M = ones(4,3);
-print("dim: " + M.dim);
-print("re: " + M.re);
-print(M);
+var A,S;
 
-//print("print matrix");
-//print(M1);
-
-var A = ones(3,3);
-print(mul_m_s(A,2));
-print("A.im: " + typeof A.im);
-print(mul_m_s(A,[1,2]));
-
-print("testing sum_m");
+A = ones(3,3);
+//print("Summing\n" + A);
+S = sum_m(A);
+//print("sum:\n" + S);
+assert(equal_v([[3,1]], [S.dim]));
+assert(equal_v([[3,3,3]], [S.re]));
+print("sum_m ones(3,3) ok");
 
 A = ones(3,3,3);
-var S1 = sum_m(A);
-print("sum:\n" + S1);
+//print("Summing\n" + A);
+S = sum_m(A);
+//print("sum:\n" + S);
+assert(equal_v([[3,1,3]], [S.dim]));
+assert(equal_v([[3,3,3,3,3,3,3,3,3]], [S.re]));
+// add a false positive test
+assert(!equal_v([[2,3,3,3,3,3,3,3,3]], [S.re]));
 
-var B = ones(2,2,2,2);
-var S2 = sum_m(B);
-print("sum:\n" + S2);
+print("sum_m ones(3,3,3) ok");
 
-var C = ones(3,3);
-print("summing:\n" + C);
-var S3 = sum_m(C);
-print("sum:\n" + S3);
+A = ones(2,2,2,2);
+S = sum_m(A);
+//print("sum:\n" + S);
+
+assert(equal_v([[2,1,2,2]], [S.dim]));
+assert(equal_v([[2,2,2,2,2,2,2,2]], [S.re]));
+
+print("sum_m ones(2,2,2,2) ok");
 
 quit(0);
 
