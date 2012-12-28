@@ -33,22 +33,26 @@ function toc() {
 
 
 function printMatlab(a) {
-    var m,n, re, im, str;
+    var i, m,n, re, im, str;
 
+    re = a.re;
+    im = a.im;
+    i = 0;
     str = "[";
 
     for(m = 0; m < a.dim[0]; m++) {
-        re = a.re[m] ? a.re[m] : [];
-        im = a.im[m] ? a.im[m] : [];
-        for(n = 0; n < a.dim[1]; n++) {
-            str += re[n] ? re[n] : 0 + " ";
 
-            if(im[n] && im[n] > 0) {
-                str += "+" + im[n] + "i ";
-            } else if (typeof im[n] != "undefined") {
-                str += im[n] + "i ";  
-            }
+        for(n = 0; n < a.dim[1]; n++) {
+            str += re[i] + " ";
+
+            if(im)
+                if(im[i] > 0){
+                    str += "+" + im[i] + "i ";
+                } else {
+                    str += im[i] + "i ";  
+                }
             str += " ";
+            i++;
         }
         if(m == a.dim[0]-1) {
             print(str + "]");
@@ -712,7 +716,10 @@ function Matrix() {
         for(i = 0; i < this.dim.length; i++) {
             n = n * this.dim[i];
         }
-        this.re = new Array(n);
+        var _re = this.re = new Array(n);
+        for(i = 0; i < n; i++) {
+            _re[i] = 0;
+        }
     } else {
         this.re = [];        
     }
@@ -1169,6 +1176,16 @@ function add_m(a,b) {
 	}
 	// dimensions agree
 
+        if(n === a.dim.length) {
+            if(!a.im && b.im) {
+                a.im = add_v([a.re], [b.re, b.im])[1];
+            } else {
+                add_v([a.re, a.im], [b.re, b.im]);
+            }
+            return a;
+        }
+/*
+
 	var num = 0;
 
 	// and the matrices has the same dimension, do the adding
@@ -1218,6 +1235,7 @@ function add_m(a,b) {
 	    } while(a.nextrow(i));
 	    return a;
 	}
+*/
     }
 
     throw new("operator +: nonconformant arguments " + a.dim[0] + "x" + a.dim[1] + ", " + b.dim[0] + "x" + b.dim[1]);

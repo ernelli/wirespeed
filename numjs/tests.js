@@ -259,20 +259,46 @@ assert(equal_v([[2,2,2,2,2,2,2,2]], [S.re]));
 
 print("sum_m ones(2,2,2,2) ok");
 
-quit(0);
+print("Testing matrix arithmetic");
+
+A = zeros(3,3);
+var B = ones(3,3);
+add_m(A,B);
+assert(equal_v([A.re], [B.re]));
+print("simple add_m ok");
 
 print("testing gauss elimination");
 
 Math.seedrandom(4711);
 
+print("seed done");
+
 var N = 3;
 
-var A = add_m(ones(N,N), mul_m_s(rand(N),-2) );
+var ms = mul_m_s(rand(N),-2);
+
+print("mul_m_s done");
+
+var ones = ones(N,N);
+
+print("ones done");
+
+A = add_m(ones, ms );
+
+print("add done");
+
 print(A);
 print("-----------------");
+
 tic();
+print("start inverse");
+
+printMatlab(A);
+
 var IA = inverse(A);
+print("inverse done");
 toc();
+print(IA.re);
 print(IA);
 
 var AIA = mul_m(A, IA);

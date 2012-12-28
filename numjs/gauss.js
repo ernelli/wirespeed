@@ -87,6 +87,7 @@ function gauss_real(a)
 	p[m] = m;
     }
 
+/*
     //print("Pivot array: " + p);
     for(m = 0; m < M; m++) {
 	// insert zero row in empty sparse matrix, note! makes matrix singular
@@ -106,7 +107,7 @@ function gauss_real(a)
 	    }	    
 	}
     }
-
+*/
     // Work down along all rows
     for(m = 0; m < M; m++) {
 	max = re[m][m] ? Math.abs(re[m][m]) : 0;
@@ -175,13 +176,13 @@ function gaussjordan_real(a)
 }
 
 function inverse(m) {
-    var r, i, re, n, res;
+    var r, i, I, re, n, N, res;
 
     if(m.dim.length != 2 || m.dim[0] !== m.dim[1]) {
 	throw new("error: inverse: argument must be a square matrix");
     }
 
-    if(m.im.length) {
+    if(m.im && m.im.length) {
 	throw new("error: inverse: complex matrices not supported yet");
     }
 
@@ -189,18 +190,31 @@ function inverse(m) {
     
     // augment result matrix with eye
     r = new Matrix(m.dim[0], 2*m.dim[0]);
-    i = m.firstrow();
-    do {
-	re = m.getrow(i)[0].slice(0);
-	re[n++] = 1;
-        r.setrow(i, re, false);
-    } while(m.nextelem(i));
+    print("result matrix dim: " + r.dim);
+    print("result matrix re: " + r.re);
+    print(r);
 
-//    print("Augmented matrix");
-//    print(r);
+    N = r.dim[1];
+    I = m.dim[0];
+    
+    var s, d;
+
+    s = 0;
+    d = 0;
+
+    for(n = 0; n < N; n++) {
+        for(i = 0; i < I; i++) {
+            r.re[d++] = m.re[s++];
+        }
+        r.re[d+n] = 1;
+        d+= I;
+    }
+    
+    print("Augmented matrix");
+    print(r);
     res = gaussjordan_real(r);
-//    print("Inverse matrix");
-//    print(r);
+    print("Inverse matrix");
+    print(res);
 
     n = m.dim[0];
     i = r.firstrow();
