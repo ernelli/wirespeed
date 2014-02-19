@@ -1,0 +1,439 @@
+// array of nodes, each node contains multiple inputs, these are resolved each time a connected output changes
+// each output can be 0, 1, 'Z', 'X'
+// contains
+// {
+//   inputs: [],
+//   value: 
+// }
+//
+var nodes = [];
+
+// the logic expressions that connects the nodes, contains callbacks
+// 
+// {
+//   a: node,
+//   b: node,
+//   out: value
+// }
+
+var logic = [];
+
+// the event queue, sorted by time
+var events = [];
+
+// probes that print internal states during simulation
+// {
+//   node: node to watch
+//   name: name of watch
+// }
+var stateProbes = [];
+
+var simulationTime = 0;
+
+function printEvents() {
+    var str = "events: ";
+    for(var i = 0; i < events.length; i++) {
+        str += "[" + events[i].time + "ns " + events[i].value + " -> " + (events[i].node.label?events[i].node.label:"?") + "]";
+    }
+    console.log(str);
+
+}
+
+function addEvent(node, value, delta) {
+    var i, tstamp;
+    
+    eventTime = simulationTime + delta;
+
+    var event = { time: eventTime, node: node, value: value };
+
+    //console.log("addEvent: ", event);
+    //console.log("events: ", events);
+
+    for(i = 0; i < events.length; i++) {
+        if(events[i].time > eventTime) {
+            break;
+        }
+    }
+    if(i === 0) {
+        events.unshift(event) // prepend
+    } else {
+        if(i > events.length) {
+            events.push(event); // append
+        } else {
+            //console.log("splice event: ", event, " into position: " + (i) + " before: ", events[i]);
+            events.splice(i, 0, event); // insert before next event
+        }
+    }
+    printEvents();
+}
+
+var Z = 2;
+var X = 3;
+
+function Node() {
+    this.inputs = [];
+    this.value = X;
+    this.eval = function() {
+        var val = Z;
+        for(var i = 0; i < this.inputs.length; i++) {
+            if(val !== this.inputs[i].value) {
+                if(this.inputs[i].value !== Z) {
+                    val = X;
+                    break;
+                } else {
+                    val = this.inputs[i].value;
+                }
+            }
+        }
+        return val;
+    }
+}
+
+var NANDtable = 
+[      // 0    1    Z    X
+        [ 1,   1,   1,   X], // 0 
+        [ 1,   0,   0,   X], // 1
+        [ 1,   0,   0,   X], // Z
+        [ X,   X,   X,   X]  // X
+];
+
+
+function NAND2(a, b, delay) {
+    
+    this.value = X;
+    this.delay = delay || 0;
+    this.a = a;
+    this.b = b;
+    this.out = { value: 0 };
+    this.out.label = "nand2";
+
+    this.eval = function() {
+        var val = NANDtable[this.a.value][this.b.value];
+        if(this.value !== val) {
+            this.value = val;
+            console.log("add event to set output to: " + val + " NAND inputs: " + this.a.value + ", " + this.b.value);
+            addEvent(this.out, this.value, this.delay);
+        } else {
+            console.log("NAND value " + this.value + ", unchanged, inputs: " + this.a.value + ", " + this.b.value);
+        }
+    }
+}
+
+function NAND() {
+    this.value = X;
+
+    this.delay = 0;
+    this.in = [];
+    this.out = { value: 0 };
+    this.out.label = "nand";
+
+    for(var i = 0; i < arguments.length; i++) {
+        if(typeof arguments[i] === "object" && typeof arguments[i].value !== "undefined") {
+            this.in.push(arguments[i]);
+        } else {
+            break;
+        }
+    }
+    
+    if(i < arguments.length && typeof arguments[i] === "number") {
+        this.delay = arguments.length;
+    }
+
+    this.eval = function() {
+        var i;
+
+        var val = 0;
+        
+        for(i = 0; i < this.in.length; i++) {
+            if(this.in[i].value === X) {
+                val = X;
+                break;
+            } else if(this.in[i].value === 0) {
+                val = 1;
+                break;
+            }
+        }
+
+        if(this.value !== val) {
+            this.value = val;
+            addEvent(this.out, this.value, this.delay);
+        } else {
+            console.log("NAND value " + this.value + ", unchanged, inputs: ", this.in);
+        }
+    }
+}
+
+
+function CLK(low, high) {
+    this.low = low;
+    this.high = high || low;
+    this.value = X;
+    this.out = { value: 0 };
+    this.out.label = "clk";
+    
+    this.eval = function () {
+        var val, dt = simulationTime % (this.low + this.high);
+        console.log("dt: " + dt + ", current output value: " + this.out.value);
+        if(dt === 0) {
+            val = 1;
+        } else if(dt === this.low) {
+            val = 0;
+        }
+        
+        if(this.value !== val) {
+            this.value = val;
+            console.log("add event to set clock to: " + this.value + " after " + (this.value ? this.high : this.low));
+            addEvent(this.out, this.value, this.value ? this.high : this.low);
+        } else {
+            console.log("CLK value not changed, value: " + this.value);
+        }
+    }
+}
+
+function updateNodes() {
+    var changed, val, i;
+
+    do {
+        changed = false;
+        
+        for(i = 0; i < nodes.length; i++) {
+            val = nodes[i].eval();
+            if(nodes[i].value !== val) {
+                nodes[i].value = val;
+                changed = true;
+            }
+        }
+    } while(changed);
+}
+
+function updateLogic() {
+    var i, N;
+
+    N = events.length;
+
+    console.log("update logic");
+
+    for(i = 0; i < logic.length; i++) {
+        logic[i].eval();
+    }
+    
+    return N !== events.length;
+}
+
+function emitEvents() {
+    var event = false;
+
+    printEvents();
+
+    // trigger all events with the same or older timestamp than simulation time
+    while(events.length && simulationTime >= events[0].time) {
+        event = events.shift();
+        console.log("time: " + simulationTime + ", dispatch event: ", event);
+        event.node.value = event.value;
+    } 
+
+
+    if(event === false) {
+        console.log("no events emitted");
+    }
+
+    return event !== false;
+}
+
+function updateSimulationTime() {
+    if(events.length) {
+        simulationTime = events[0].time;
+        console.log("Simulation time advanced to: " + simulationTime);
+        return true;
+    } else {
+        return false;
+    }
+}
+
+var firstPrint = true, lastPrint = 0;
+
+function printStates() {
+    var str = "";
+
+    if(firstPrint) {
+        for(var i = 0; i <= stateProbes.length; i++) {
+            str += (i ? "\t" : "") + ((i==0) ? "time\t" : stateProbes[i-1].name);
+        }
+        console.log(str);
+        firstPrint = false;
+        str = "";
+    }
+
+    for(var i = 0; i < stateProbes.length; i++) {
+        str += (i ? "\t" : "") + stateProbes[i].node.value;
+    }
+
+
+    while(lastPrint < simulationTime) {
+        console.log("time: " + ("   " + lastPrint).slice(-3) + "\t" + str);
+        lastPrint++;
+    }
+    console.log("time: " + ("   " + lastPrint).slice(-3) + "\t" + str);    
+}
+
+function checkProbes() {
+    var i, s;
+
+    printStates();
+
+    for(i = 0; i < stateProbes.length; i++) {
+        if(stateProbes[i].states) {
+            s = stateProbes[i].states;
+            if(s.length === 0 || s[s.length-1].s !== stateProbes[i].node.value) {
+                console.log("push simulationTime: " + simulationTime + ", on state: " + stateProbes[i].name);
+                s.push({ t: simulationTime, s: stateProbes[i].node.value})
+            } 
+        }
+    }
+}
+
+function printTimingDiagram(states, from, to) {
+    var i, s, p;
+    
+    var s = 0;
+    
+    var str1 = "";
+    var str0 = "";
+
+    //console.log("timing for states: ", states);
+
+    p = states[s].s;
+
+    for(i = 0; i < 120; i++) {
+        if( (s + 1 < states.length) && states[s+1].t <= i) {
+            s++;
+        }
+
+//        str1 += (states[s].s === 1) ? "1" : "0";
+//        str0 += states[s].s;
+
+        if(states[s].s !== p) {
+            if(states[s].s === 1) {
+                str1 += " ";
+                str0 += "/";
+            } else {
+                str1 += " ";
+                str0 += "\\";
+            }            
+        } else {
+            if(states[s].s === 1) {
+                str1 += "_";
+                str0 += " ";
+            } else {
+                str1 += " ";
+                str0 += "_";
+            }
+        }
+
+
+        p = states[s].s;
+    }
+
+//    console.log("------------------\n");
+    console.log(str1);
+    console.log(str0);
+}
+
+
+function runSimulation(endtime) {
+    var changed, rippling;
+    do {
+        changed = false;
+        do {
+            rippling = updateLogic();
+            rippling = updateNodes() || rippling;
+            rippling = emitEvents() || rippling;
+
+            changed = changed || rippling;
+            if(rippling) {
+                console.log("logic is rippling");
+            }
+        } while(rippling);
+
+        checkProbes();
+
+        changed = updateSimulationTime() || changed;
+
+    } while( changed && simulationTime < endtime);
+    
+}
+
+var clock = new CLK(5,5);
+var vcc = new Node();
+vcc.value = 1;
+vcc.inputs.push(vcc);
+vcc.label = "vcc";
+
+var data0 = new Node();
+data0.label = "data0";
+
+var data1 = new Node();
+data1.label = "data1";
+
+var data2 = new Node();
+data2.label = "data2";
+
+var gate = new NAND2(data0, data1);
+
+//console.log("add data, simulationTime: " + simulationTime);
+
+addEvent(data0, 0, 0);
+addEvent(data0, 1, 5);
+addEvent(data0, 0, 10);
+addEvent(data0, 1, 15);
+addEvent(data0, 0, 20);
+addEvent(data0, 1, 25);
+addEvent(data0, 0, 30);
+addEvent(data0, 1, 35);
+
+addEvent(data1, 0, 0);
+addEvent(data1, 1, 10);
+addEvent(data1, 0, 20);
+addEvent(data1, 1, 30);
+
+addEvent(data2, 0, 0);
+addEvent(data2, 1, 20);
+
+var gate3 = new NAND(data0, data1, data2);
+
+logic.push(clock);
+logic.push(gate);
+logic.push(gate3);
+
+stateProbes.push({ node: data0, name: "data0", states: [] });
+stateProbes.push({ node: data1, name: "data1", states: [] });
+stateProbes.push({ node: data2, name: "data2", states: [] });
+stateProbes.push({ node: gate, name: "gate", states: [] });
+stateProbes.push({ node: gate3, name: "gate3", states: [] });
+
+runSimulation(100);
+
+//console.log("got clock: ", clock);
+/*
+stateProbes.push({ node: clock.out, name: "clk", states: [] });
+stateProbes.push({ node: vcc, name: "vcc", states: [] });
+stateProbes.push({ node: gate.out, name: "clk&1", states: [] });
+stateProbes.push({ node: data, name: "data", states: [] });
+
+console.log("nodes: ", nodes);
+
+
+
+//console.log("clock:\n", stateProbes[0]);
+//console.log("gate:\n", stateProbes[2]);
+
+console.log("data:\n", stateProbes[3]);
+
+printTimingDiagram(stateProbes[0].states);
+printTimingDiagram(stateProbes[1].states);
+printTimingDiagram(stateProbes[3].states);
+*/
+
+for(i = 0; i < stateProbes.length; i++) {
+    printTimingDiagram(stateProbes[i].states);
+}
