@@ -136,7 +136,7 @@ function NAND() {
     }
     
     if(i < arguments.length && typeof arguments[i] === "number") {
-        this.delay = arguments.length;
+        this.delay = arguments[i];
     }
 
     this.eval = function() {
@@ -191,7 +191,7 @@ function CLK(low, high) {
 }
 
 function updateNodes() {
-    var changed, val, i;
+    var changed, val, i, bail = nodes.length || 1;
 
     do {
         changed = false;
@@ -203,7 +203,12 @@ function updateNodes() {
                 changed = true;
             }
         }
-    } while(changed);
+    } while(changed && bail--);
+
+    if(!bail) {
+        console.log("Simulation error, signal propagation never stabilises");
+        process.exit(1);
+    }
 }
 
 function updateLogic() {
@@ -363,11 +368,41 @@ function runSimulation(endtime) {
     
 }
 
+function addLogic(l) {
+    logic.push(l);
+}
+
+function addNode(n) {
+    nodes.push(n);
+}
+
+function addStateProbe(probe, label) {
+    stateProbes.push({ node: probe, name: label || probe.label, states: [] });
+    return stateProbes[stateProbes.length-1];
+}
+
+exports.runSimulation = runSimulation;
+exports.addEvent = addEvent;
+exports.addLogic = addLogic;
+exports.addNode = addNode;
+exports.addStateProbe = addStateProbe;
+exports.printTimingDiagram = printTimingDiagram;
+
+var ctr = [Node, NAND2, NAND, CLK];
+
+for(i = 0; i < ctr.length; i++) {
+    exports[ctr[i].name] = ctr[i];
+}
+
+/*
 var clock = new CLK(5,5);
+
 var vcc = new Node();
 vcc.value = 1;
 vcc.inputs.push(vcc);
 vcc.label = "vcc";
+
+
 
 var data0 = new Node();
 data0.label = "data0";
@@ -382,22 +417,6 @@ var gate = new NAND2(data0, data1);
 
 //console.log("add data, simulationTime: " + simulationTime);
 
-addEvent(data0, 0, 0);
-addEvent(data0, 1, 5);
-addEvent(data0, 0, 10);
-addEvent(data0, 1, 15);
-addEvent(data0, 0, 20);
-addEvent(data0, 1, 25);
-addEvent(data0, 0, 30);
-addEvent(data0, 1, 35);
-
-addEvent(data1, 0, 0);
-addEvent(data1, 1, 10);
-addEvent(data1, 0, 20);
-addEvent(data1, 1, 30);
-
-addEvent(data2, 0, 0);
-addEvent(data2, 1, 20);
 
 var gate3 = new NAND(data0, data1, data2);
 
@@ -410,8 +429,9 @@ stateProbes.push({ node: data1, name: "data1", states: [] });
 stateProbes.push({ node: data2, name: "data2", states: [] });
 stateProbes.push({ node: gate, name: "gate", states: [] });
 stateProbes.push({ node: gate3, name: "gate3", states: [] });
+*/
 
-runSimulation(100);
+
 
 //console.log("got clock: ", clock);
 /*
@@ -434,6 +454,6 @@ printTimingDiagram(stateProbes[1].states);
 printTimingDiagram(stateProbes[3].states);
 */
 
-for(i = 0; i < stateProbes.length; i++) {
-    printTimingDiagram(stateProbes[i].states);
-}
+//for(i = 0; i < stateProbes.length; i++) {
+//    printTimingDiagram(stateProbes[i].states);
+//}
