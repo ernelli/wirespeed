@@ -70,18 +70,20 @@ function addEvent(node, value, delta) {
 var Z = 2;
 var X = 3;
 
-function Node() {
+function Node(label) {
     this.inputs = [];
     this.value = X;
+    this.label = label;
+
     this.eval = function() {
         var val = Z;
         for(var i = 0; i < this.inputs.length; i++) {
             if(val !== this.inputs[i].value) {
-                if(this.inputs[i].value !== Z) {
+                if(val === Z) {
+                    val = this.inputs[i].value;
+                } else if(this.inputs[i].value !== Z) {
                     val = X;
                     break;
-                } else {
-                    val = this.inputs[i].value;
                 }
             }
         }
@@ -111,10 +113,10 @@ function NAND2(a, b, delay) {
         var val = NANDtable[this.a.value][this.b.value];
         if(this.value !== val) {
             this.value = val;
-            console.log("add event to set output to: " + val + " NAND inputs: " + this.a.value + ", " + this.b.value);
+            console.log("NAND2:" + this.out.label + " add event to set output to: " + val + " NAND inputs: " + this.a.value + ", " + this.b.value);
             addEvent(this.out, this.value, this.delay);
         } else {
-            console.log("NAND value " + this.value + ", unchanged, inputs: " + this.a.value + ", " + this.b.value);
+            console.log("NAND2:" + this.out.label + " value " + this.value + ", unchanged, inputs: " + this.a.value + ", " + this.b.value);
         }
     }
 }
@@ -191,24 +193,34 @@ function CLK(low, high) {
 }
 
 function updateNodes() {
-    var changed, val, i, bail = nodes.length || 1;
+    var changed, rippling, val, i, bail = nodes.length || 1;
+
+    console.log("updateNodes: ", nodes);
+
+    changed = false;
 
     do {
-        changed = false;
+        rippling = false;
         
         for(i = 0; i < nodes.length; i++) {
             val = nodes[i].eval();
             if(nodes[i].value !== val) {
+                console.log("node:" + nodes[i].label + " input: " + nodes[i].inputs[0].value + " has changed from: " + nodes[i].value + ", eval: " + val);
                 nodes[i].value = val;
-                changed = true;
+                rippling = true;
+            } else {
+                console.log("node input: " + nodes[i].inputs[0].value + " has not changed from: " + nodes[i].value + ", eval: " + val);
             }
         }
-    } while(changed && bail--);
+        changed = rippling || changed;
+    } while(rippling && bail--);
 
     if(!bail) {
         console.log("Simulation error, signal propagation never stabilises");
         process.exit(1);
     }
+
+    return changed;
 }
 
 function updateLogic() {
@@ -345,20 +357,44 @@ function printTimingDiagram(states, from, to) {
 }
 
 
-function runSimulation(endtime) {
-    var changed, rippling;
+function runSimulation(endtime, cb) {
+    var changed, rippling, tmp;
     do {
         changed = false;
         do {
             rippling = updateLogic();
-            rippling = updateNodes() || rippling;
-            rippling = emitEvents() || rippling;
+            if(rippling) {
+                console.log("logic is rippling");
+            }
+            tmp = updateNodes();
+
+            if(tmp) {
+                console.log("nodes are rippling");
+            }
+
+            rippling = tmp || rippling;
+
+            tmp = emitEvents();
+
+            if(tmp) {
+                console.log("events emitted");
+            }
+
+            rippling = tmp || rippling;
 
             changed = changed || rippling;
             if(rippling) {
                 console.log("logic is rippling");
             }
+
+
+            if(cb) {
+                cb();
+            }
+
         } while(rippling);
+
+        console.log("logic is STABLE");
 
         checkProbes();
 
