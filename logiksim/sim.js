@@ -93,10 +93,10 @@ function Node(label) {
 
 var NANDtable = 
 [      // 0    1    Z    X
-        [ 1,   1,   1,   X], // 0 
+        [ 1,   1,   1,   1], // 0 
         [ 1,   0,   0,   X], // 1
         [ 1,   0,   0,   X], // Z
-        [ X,   X,   X,   X]  // X
+        [ 1,   X,   X,   X]  // X
 ];
 
 
@@ -106,7 +106,7 @@ function NAND2(a, b, delay) {
     this.delay = delay || 0;
     this.a = a;
     this.b = b;
-    this.out = { value: 0 };
+    this.out = { value: X };
     this.out.label = "nand2";
 
     this.eval = function() {
@@ -126,7 +126,7 @@ function NAND() {
 
     this.delay = 0;
     this.in = [];
-    this.out = { value: 0 };
+    this.out = { value: X };
     this.out.label = "nand";
 
     for(var i = 0; i < arguments.length; i++) {
@@ -149,7 +149,6 @@ function NAND() {
         for(i = 0; i < this.in.length; i++) {
             if(this.in[i].value === X) {
                 val = X;
-                break;
             } else if(this.in[i].value === 0) {
                 val = 1;
                 break;
@@ -329,24 +328,28 @@ function printTimingDiagram(states, from, to) {
 //        str1 += (states[s].s === 1) ? "1" : "0";
 //        str0 += states[s].s;
 
-        if(states[s].s !== p) {
-            if(states[s].s === 1) {
-                str1 += " ";
-                str0 += "/";
-            } else {
-                str1 += " ";
-                str0 += "\\";
-            }            
+        if(states[s].s === X) {
+            str1 += " ";
+            str0 += "X";
         } else {
-            if(states[s].s === 1) {
-                str1 += "_";
-                str0 += " ";
+            if(states[s].s !== p) {
+                if(states[s].s === 1) {
+                    str1 += " ";
+                    str0 += "/";
+                } else {
+                    str1 += " ";
+                    str0 += "\\";
+                }            
             } else {
-                str1 += " ";
-                str0 += "_";
+                if(states[s].s === 1) {
+                str1 += "_";
+                    str0 += " ";
+                } else {
+                    str1 += " ";
+                    str0 += "_";
+                }
             }
         }
-
 
         p = states[s].s;
     }

@@ -19,21 +19,20 @@ var rs2outl = new sim.Node();
 var rs0u = new sim.NAND2(rs1outl, rs0outl, 0);
 var rs0l = new sim.NAND2(rs0outu, clk, 0);
 
-rs0u.out.value = 0;
-rs0l.out.value = 1;
+//rs0u.out.value = 0;
+//rs0l.out.value = 1;
 
 var rs1u = new sim.NAND(rs0outl, clk, rs1outl, 0);
 var rs1l = new sim.NAND2(rs1outu, data, 0);
 
-rs1u.out.value = 1;
-rs1l.out.value = 0;
-
+//rs1u.out.value = 1;
+//rs1l.out.value = 0;
 
 var rs2u = new sim.NAND2(rs0outl, rs2outl, 0);
 var rs2l = new sim.NAND2(rs2outu, rs1outu, 0);
 
-rs2u.out.value = 0;
-rs2l.out.value = 1;
+//rs2u.out.value = 0;
+//rs2l.out.value = 1;
 
 rs0outu.inputs.push(rs0u.out)
 rs0outl.inputs.push(rs0l.out)

@@ -11,8 +11,8 @@ g0.out.label = "g0";
 var g1 = new sim.NAND2(_r, n0, 0);
 g1.out.label = "g1";
 
-g0.out.value = 0;
-g1.out.value = 1;
+//g0.out.value = 0;
+//g1.out.value = 1;
 
 n0.inputs.push(g0.out);
 n1.inputs.push(g1.out);
