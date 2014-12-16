@@ -91,6 +91,34 @@ function Node(label) {
     }
 }
 
+function Logic() {
+    this.value = X;
+    this.delay = 0;
+    this.inputs = [];
+    this.out = { value: X, label: "" };
+    this.eval = function() {
+        var val = this.table(inputs[0], inputs[1]);
+        if(val !== this.value) {
+            this.value = val;
+            addEvent(this.out, this.value, this.delay);
+        }
+    }
+}
+
+function OR(a, b, delay) {
+    this.table = 
+        [      // 0    1    Z    X
+                [ 0,   1,   1,   X], // 0 
+                [ 1,   1,   1,   1], // 1
+                [ 1,   1,   1,   1], // Z
+                [ X,   1,   1,   X]  // X
+        ];
+
+
+}
+
+OR.prototype = new Logic();
+
 var NANDtable = 
 [      // 0    1    Z    X
         [ 1,   1,   1,   1], // 0 
@@ -106,8 +134,7 @@ function NAND2(a, b, delay) {
     this.delay = delay || 0;
     this.a = a;
     this.b = b;
-    this.out = { value: X };
-    this.out.label = "nand2";
+    this.out = { value: X, label: "nand" };
 
     this.eval = function() {
         var val = NANDtable[this.a.value][this.b.value];
@@ -125,13 +152,12 @@ function NAND() {
     this.value = X;
 
     this.delay = 0;
-    this.in = [];
-    this.out = { value: X };
-    this.out.label = "nand";
+    this.inputs = [];
+    this.out = { value: X, label: nand };
 
     for(var i = 0; i < arguments.length; i++) {
         if(typeof arguments[i] === "object" && typeof arguments[i].value !== "undefined") {
-            this.in.push(arguments[i]);
+            this.inputs.push(arguments[i]);
         } else {
             break;
         }
@@ -146,10 +172,10 @@ function NAND() {
 
         var val = 0;
         
-        for(i = 0; i < this.in.length; i++) {
-            if(this.in[i].value === X) {
+        for(i = 0; i < this.inputs.length; i++) {
+            if(this.inputs[i].value === X) {
                 val = X;
-            } else if(this.in[i].value === 0) {
+            } else if(this.inputs[i].value === 0) {
                 val = 1;
                 break;
             }
@@ -159,7 +185,7 @@ function NAND() {
             this.value = val;
             addEvent(this.out, this.value, this.delay);
         } else {
-            console.log("NAND value " + this.value + ", unchanged, inputs: ", this.in);
+            console.log("NAND value " + this.value + ", unchanged, inputs: ", this.inputs);
         }
     }
 }
